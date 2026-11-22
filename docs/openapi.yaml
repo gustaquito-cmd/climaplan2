@@ -1,0 +1,1698 @@
+openapi: 3.1.0
+info:
+  title: ClimaPlan API
+  description: "API REST para gestión de usuarios, planes y evaluación de condiciones\
+    \ meteorológicas."
+  version: 1.0.0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: Autenticación
+  description: Registro e inicio de sesión mediante JWT
+- name: Clima
+  description: Consulta de información meteorológica mediante OpenWeatherMap
+- name: Destinos favoritos
+  description: Gestión de destinos favoritos por usuario
+- name: Usuarios
+  description: Gestión y consulta de usuarios
+- name: Planes
+  description: Gestión de planes y evaluación meteorológica
+paths:
+  /api/v1/users/{id}:
+    get:
+      tags:
+      - Usuarios
+      summary: Consultar usuario
+      description: Obtiene un usuario por identificador.
+      operationId: obtenerPorId
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioResponse"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Se requiere autenticación
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "403":
+          description: Permisos insuficientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Forbidden:
+                  description: Forbidden
+                  value:
+                    status: 403
+                    error: Forbidden
+                    message: No tiene permisos para acceder a este recurso
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Not Found:
+                  description: Not Found
+                  value:
+                    status: 404
+                    error: Not Found
+                    message: Usuario no encontrado
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - Usuarios
+      summary: Actualizar usuario
+      description: Actualiza el nombre y correo de un usuario.
+      operationId: actualizar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsuarioUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: Usuario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioResponse"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Bad Request:
+                  description: Bad Request
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: La solicitud contiene campos inválidos
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors:
+                      nombre: El nombre es obligatorio
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Se requiere autenticación
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "403":
+          description: Permisos insuficientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Forbidden:
+                  description: Forbidden
+                  value:
+                    status: 403
+                    error: Forbidden
+                    message: No tiene permisos para acceder a este recurso
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Not Found:
+                  description: Not Found
+                  value:
+                    status: 404
+                    error: Not Found
+                    message: Usuario no encontrado
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "409":
+          description: Correo ya registrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Conflict:
+                  description: Conflict
+                  value:
+                    status: 409
+                    error: Conflict
+                    message: El email ya está registrado
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Usuarios
+      summary: Desactivar usuario
+      description: Desactiva un usuario por identificador.
+      operationId: desactivar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: Usuario desactivado
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Se requiere autenticación
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "403":
+          description: Permisos insuficientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Forbidden:
+                  description: Forbidden
+                  value:
+                    status: 403
+                    error: Forbidden
+                    message: No tiene permisos para acceder a este recurso
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Not Found:
+                  description: Not Found
+                  value:
+                    status: 404
+                    error: Not Found
+                    message: Usuario no encontrado
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/users/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+      security:
+      - bearerAuth: []
+  /api/v1/plans/{id}:
+    get:
+      tags:
+      - Planes
+      summary: Consultar plan
+      description: Obtiene un plan por identificador respetando autorización por propietario.
+      operationId: obtenerPorId_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Plan encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanResponse"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Se requiere autenticación
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "403":
+          description: El plan pertenece a otro usuario
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Forbidden:
+                  description: Forbidden
+                  value:
+                    status: 403
+                    error: Forbidden
+                    message: No tiene permisos para acceder a este recurso
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "404":
+          description: Plan no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Not Found:
+                  description: Not Found
+                  value:
+                    status: 404
+                    error: Not Found
+                    message: Plan no encontrado
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - Planes
+      summary: Actualizar plan
+      description: Actualiza un plan respetando autorización por propietario.
+      operationId: actualizar_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanRequest"
+        required: true
+      responses:
+        "200":
+          description: Plan actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanResponse"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Bad Request:
+                  description: Bad Request
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: La solicitud contiene campos inválidos
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors:
+                      titulo: El título es obligatorio
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Se requiere autenticación
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "403":
+          description: El plan pertenece a otro usuario
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Forbidden:
+                  description: Forbidden
+                  value:
+                    status: 403
+                    error: Forbidden
+                    message: No tiene permisos para acceder a este recurso
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "404":
+          description: Plan no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Not Found:
+                  description: Not Found
+                  value:
+                    status: 404
+                    error: Not Found
+                    message: Plan no encontrado
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Planes
+      summary: Eliminar plan
+      description: Elimina un plan respetando autorización por propietario.
+      operationId: eliminar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: Plan eliminado
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Se requiere autenticación
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "403":
+          description: El plan pertenece a otro usuario
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Forbidden:
+                  description: Forbidden
+                  value:
+                    status: 403
+                    error: Forbidden
+                    message: No tiene permisos para acceder a este recurso
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "404":
+          description: Plan no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Not Found:
+                  description: Not Found
+                  value:
+                    status: 404
+                    error: Not Found
+                    message: Plan no encontrado
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/plans/1
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+      security:
+      - bearerAuth: []
+  /api/v1/favorites/{id}:
+    get:
+      tags:
+      - Destinos favoritos
+      summary: Consultar destino favorito
+      description: Obtiene un destino respetando su propietario.
+      operationId: obtenerPorId_2
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Destino favorito encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DestinoFavoritoResponse"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Destino favorito no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - Destinos favoritos
+      summary: Actualizar destino favorito
+      description: Actualiza un destino respetando su propietario.
+      operationId: actualizar_2
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DestinoFavoritoRequest"
+        required: true
+      responses:
+        "200":
+          description: Destino favorito actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DestinoFavoritoResponse"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Destino favorito no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Destinos favoritos
+      summary: Eliminar destino favorito
+      description: Elimina un destino respetando su propietario.
+      operationId: eliminar_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: Destino favorito eliminado
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Destino favorito no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/plans:
+    get:
+      tags:
+      - Planes
+      summary: Listar planes
+      description: Lista los planes disponibles según la identidad y el rol del usuario.
+      operationId: obtenerTodos
+      responses:
+        "200":
+          description: Planes obtenidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlanResponse"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Se requiere autenticación
+                    path: /api/v1/plans
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/plans
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Planes
+      summary: Crear plan
+      description: Crea un plan asociado al usuario autenticado.
+      operationId: crear
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanRequest"
+        required: true
+      responses:
+        "201":
+          description: Plan creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanResponse"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Bad Request:
+                  description: Bad Request
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: La solicitud contiene campos inválidos
+                    path: /api/v1/plans
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors:
+                      titulo: El título es obligatorio
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Se requiere autenticación
+                    path: /api/v1/plans
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/plans
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+      security:
+      - bearerAuth: []
+  /api/v1/favorites:
+    get:
+      tags:
+      - Destinos favoritos
+      summary: Listar destinos favoritos
+      description: Lista los destinos visibles para el usuario autenticado.
+      operationId: obtenerTodos_1
+      responses:
+        "200":
+          description: Destinos favoritos obtenidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DestinoFavoritoResponse"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Destinos favoritos
+      summary: Crear destino favorito
+      description: Crea un destino para el usuario autenticado.
+      operationId: crear_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DestinoFavoritoRequest"
+        required: true
+      responses:
+        "201":
+          description: Destino favorito creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DestinoFavoritoResponse"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/auth/register:
+    post:
+      tags:
+      - Autenticación
+      summary: Registrar usuario
+      description: Crea una cuenta y devuelve un token JWT.
+      operationId: registrar
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+        required: true
+      responses:
+        "201":
+          description: Usuario registrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Bad Request:
+                  description: Bad Request
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: La solicitud contiene campos inválidos
+                    path: /api/v1/auth/register
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors:
+                      email: El email debe ser válido
+        "409":
+          description: Correo ya registrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Conflict:
+                  description: Conflict
+                  value:
+                    status: 409
+                    error: Conflict
+                    message: El email ya está registrado
+                    path: /api/v1/auth/register
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/auth/register
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+  /api/v1/auth/login:
+    post:
+      tags:
+      - Autenticación
+      summary: Iniciar sesión
+      description: Valida las credenciales y devuelve un token JWT.
+      operationId: iniciarSesion
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: Inicio de sesión exitoso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Bad Request:
+                  description: Bad Request
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: La solicitud contiene campos inválidos
+                    path: /api/v1/auth/login
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors:
+                      email: El email debe ser válido
+        "401":
+          description: Credenciales incorrectas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Credenciales inválidas
+                    path: /api/v1/auth/login
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/auth/login
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+  /api/v1/weather:
+    get:
+      tags:
+      - Clima
+      summary: Consultar clima actual
+      description: Consulta el clima actual de una ciudad mediante OpenWeatherMap.
+      operationId: obtenerClima
+      parameters:
+      - name: city
+        in: query
+        description: Nombre de la ciudad
+        required: true
+        schema:
+          type: string
+        example: Madrid
+      responses:
+        "200":
+          description: Clima obtenido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeatherResponse"
+        "400":
+          description: Ciudad no especificada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Bad Request:
+                  description: Bad Request
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: El parámetro city es obligatorio
+                    path: /api/v1/weather
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Se requiere autenticación
+                    path: /api/v1/weather
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "404":
+          description: Ciudad no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Not Found:
+                  description: Not Found
+                  value:
+                    status: 404
+                    error: Not Found
+                    message: Ciudad no encontrada
+                    path: /api/v1/weather
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/weather
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+      security:
+      - bearerAuth: []
+  /api/v1/users:
+    get:
+      tags:
+      - Usuarios
+      summary: Listar usuarios
+      description: Obtiene todos los usuarios; requiere rol administrador.
+      operationId: obtenerTodos_2
+      responses:
+        "200":
+          description: Listado obtenido
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UsuarioResponse"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Se requiere autenticación
+                    path: /api/v1/users
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "403":
+          description: Permisos insuficientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Forbidden:
+                  description: Forbidden
+                  value:
+                    status: 403
+                    error: Forbidden
+                    message: No tiene permisos para acceder a este recurso
+                    path: /api/v1/users
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/users
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+      security:
+      - bearerAuth: []
+  /api/v1/users/me:
+    get:
+      tags:
+      - Usuarios
+      summary: Consultar usuario autenticado
+      description: Obtiene los datos del usuario vinculado al JWT.
+      operationId: obtenerUsuarioAutenticado
+      responses:
+        "200":
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioResponse"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Se requiere autenticación
+                    path: /api/v1/users/me
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/users/me
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+      security:
+      - bearerAuth: []
+  /api/v1/plans/{id}/weather-check:
+    get:
+      tags:
+      - Planes
+      summary: Evaluar clima de un plan
+      description: Consulta OpenWeatherMap y evalúa las condiciones del plan.
+      operationId: verificarClima
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Evaluación obtenida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanWeatherCheckResponse"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Unauthorized:
+                  description: Unauthorized
+                  value:
+                    status: 401
+                    error: Unauthorized
+                    message: Se requiere autenticación
+                    path: /api/v1/plans/1/weather-check
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "403":
+          description: El plan pertenece a otro usuario
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Forbidden:
+                  description: Forbidden
+                  value:
+                    status: 403
+                    error: Forbidden
+                    message: No tiene permisos para acceder a este recurso
+                    path: /api/v1/plans/1/weather-check
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "404":
+          description: Plan o ubicación no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Not Found:
+                  description: Not Found
+                  value:
+                    status: 404
+                    error: Not Found
+                    message: Recurso no encontrado
+                    path: /api/v1/plans/1/weather-check
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+        "500":
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                Internal Server Error:
+                  description: Internal Server Error
+                  value:
+                    status: 500
+                    error: Internal Server Error
+                    message: Ocurrió un error interno en el servidor
+                    path: /api/v1/plans/1/weather-check
+                    timestamp: 2026-11-20T12:00:00
+                    validationErrors: null
+      security:
+      - bearerAuth: []
+components:
+  schemas:
+    UsuarioUpdateRequest:
+      type: object
+      description: Datos editables del usuario
+      properties:
+        nombre:
+          type: string
+          description: Nombre completo
+          example: Gustavo Pérez
+          minLength: 1
+        email:
+          type: string
+          format: email
+          description: Correo electrónico
+          example: gustavo@example.com
+          minLength: 1
+      required:
+      - email
+      - nombre
+    UsuarioResponse:
+      type: object
+      description: Datos públicos del usuario
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador
+          example: 1
+        nombre:
+          type: string
+          description: Nombre completo
+          example: Gustavo Pérez
+        email:
+          type: string
+          description: Correo electrónico
+          example: gustavo@example.com
+        rol:
+          type: string
+          description: Rol
+          enum:
+          - ROLE_USER
+          - ROLE_ADMIN
+          example: ROLE_USER
+        estado:
+          type: string
+          description: Estado
+          enum:
+          - ACTIVO
+          - INACTIVO
+          example: ACTIVO
+    ApiErrorResponse:
+      type: object
+      description: Respuesta estandarizada para errores HTTP
+      properties:
+        status:
+          type: integer
+          format: int32
+          description: Código de estado HTTP
+          example: 0
+        error:
+          type: string
+          description: Descripción breve del error
+          example: HTTP error
+        message:
+          type: string
+          description: Mensaje descriptivo del error
+          example: Descripción del error
+        path:
+          type: string
+          description: Ruta solicitada
+          example: /api/v1/resource
+        timestamp:
+          type: string
+          format: date-time
+          description: Fecha y hora del error
+          example: 2026-11-20T12:00:00
+        validationErrors:
+          type: object
+          additionalProperties:
+            type: string
+          description: Errores de validación por campo
+          example:
+            campo: mensaje de validación
+    PlanRequest:
+      type: object
+      description: Datos para crear o actualizar un plan
+      properties:
+        titulo:
+          type: string
+          description: Título del plan
+          example: Senderismo
+          minLength: 1
+        ciudad:
+          type: string
+          description: Ciudad de destino
+          example: Madrid
+          minLength: 1
+        fecha:
+          type: string
+          format: date
+          description: Fecha planeada
+          example: 2026-12-01
+        tipoActividad:
+          type: string
+          description: Tipo de actividad
+          example: Senderismo
+          minLength: 1
+        notas:
+          type: string
+          description: Notas adicionales
+          example: Llevar protector solar
+        estado:
+          type: string
+          description: Estado del plan
+          enum:
+          - PENDIENTE
+          - COMPLETADO
+          - CANCELADO
+          example: PENDIENTE
+      required:
+      - ciudad
+      - fecha
+      - tipoActividad
+      - titulo
+    PlanResponse:
+      type: object
+      description: Plan registrado
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador
+          example: 1
+        titulo:
+          type: string
+          description: Título
+          example: Senderismo
+        ciudad:
+          type: string
+          description: Ciudad
+          example: Madrid
+        fecha:
+          type: string
+          format: date
+          description: Fecha
+          example: 2026-12-01
+        tipoActividad:
+          type: string
+          description: Tipo de actividad
+          example: Senderismo
+        notas:
+          type: string
+          description: Notas
+          example: Llevar protector solar
+        estado:
+          type: string
+          description: Estado
+          enum:
+          - PENDIENTE
+          - COMPLETADO
+          - CANCELADO
+          example: PENDIENTE
+        usuarioId:
+          type: integer
+          format: int64
+          description: ID del usuario propietario
+          example: 1
+        nombreUsuario:
+          type: string
+          description: Nombre del propietario
+          example: Gustavo Pérez
+    DestinoFavoritoRequest:
+      type: object
+      description: Datos para crear o actualizar un destino favorito
+      properties:
+        ciudad:
+          type: string
+          description: Ciudad del destino
+          example: Tuxtla Gutiérrez
+          maxLength: 100
+          minLength: 0
+        pais:
+          type: string
+          description: País del destino
+          example: México
+          maxLength: 100
+          minLength: 0
+        latitud:
+          type: number
+          format: double
+          description: Latitud entre -90 y 90
+          example: 16.7538
+          maximum: 90.0
+          minimum: -90.0
+        longitud:
+          type: number
+          format: double
+          description: Longitud entre -180 y 180
+          example: -93.116
+          maximum: 180.0
+          minimum: -180.0
+      required:
+      - ciudad
+      - latitud
+      - longitud
+      - pais
+    DestinoFavoritoResponse:
+      type: object
+      description: Destino favorito registrado
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador
+          example: 1
+        ciudad:
+          type: string
+          description: Ciudad
+          example: Tuxtla Gutiérrez
+        pais:
+          type: string
+          description: País
+          example: México
+        latitud:
+          type: number
+          format: double
+          description: Latitud
+          example: 16.7538
+        longitud:
+          type: number
+          format: double
+          description: Longitud
+          example: -93.116
+        usuarioId:
+          type: integer
+          format: int64
+          description: Identificador del usuario propietario
+          example: 1
+    RegisterRequest:
+      type: object
+      description: Datos requeridos para registrar un usuario
+      properties:
+        nombre:
+          type: string
+          description: Nombre completo
+          example: Gustavo Pérez
+          minLength: 1
+        email:
+          type: string
+          format: email
+          description: Correo electrónico
+          example: gustavo@example.com
+          minLength: 1
+        password:
+          type: string
+          description: Contraseña de al menos 8 caracteres
+          example: ClaveSegura123
+          maxLength: 2147483647
+          minLength: 8
+      required:
+      - email
+      - nombre
+      - password
+    AuthResponse:
+      type: object
+      description: Resultado de autenticación con token JWT
+      properties:
+        accessToken:
+          type: string
+          description: Token JWT de acceso
+          example: eyJhbGciOiJIUzI1NiJ9...
+        tokenType:
+          type: string
+          description: Tipo de token
+          example: Bearer
+        expiresIn:
+          type: integer
+          format: int64
+          description: Duración del token en milisegundos
+          example: 3600000
+        usuario:
+          $ref: "#/components/schemas/UsuarioResponse"
+          description: Datos del usuario autenticado
+    LoginRequest:
+      type: object
+      description: Credenciales para iniciar sesión
+      properties:
+        email:
+          type: string
+          format: email
+          description: Correo registrado
+          example: gustavo@example.com
+          minLength: 1
+        password:
+          type: string
+          description: Contraseña del usuario
+          example: ClaveSegura123
+          minLength: 1
+      required:
+      - email
+      - password
+    WeatherResponse:
+      type: object
+      description: Información meteorológica actual
+      properties:
+        ciudad:
+          type: string
+          description: Ciudad
+          example: Madrid
+        pais:
+          type: string
+          description: Código de país
+          example: ES
+        lat:
+          type: number
+          format: double
+          description: Latitud
+          example: 40.4165
+        lon:
+          type: number
+          format: double
+          description: Longitud
+          example: -3.70256
+        temperatura:
+          type: number
+          format: double
+          description: Temperatura en grados Celsius
+          example: 21.5
+        sensacionTermica:
+          type: number
+          format: double
+          description: Sensación térmica
+          example: 20.8
+        humedad:
+          type: integer
+          format: int32
+          description: Humedad porcentual
+          example: 45
+        descripcion:
+          type: string
+          description: Descripción meteorológica
+          example: cielo despejado
+        velocidadViento:
+          type: number
+          format: double
+          description: Velocidad del viento
+          example: 3.2
+    PlanWeatherCheckResponse:
+      type: object
+      description: Evaluación meteorológica asociada a un plan
+      properties:
+        planId:
+          type: integer
+          format: int64
+          description: ID del plan
+          example: 1
+        titulo:
+          type: string
+          description: Título del plan
+          example: Senderismo
+        ciudad:
+          type: string
+          description: Ciudad
+          example: Madrid
+        fecha:
+          type: string
+          format: date
+          description: Fecha
+          example: 2026-12-01
+        estadoClimatico:
+          type: string
+          description: Estado climático
+          enum:
+          - FAVORABLE
+          - PRECAUCION
+          - NO_RECOMENDABLE
+        clima:
+          $ref: "#/components/schemas/WeatherResponse"
+          description: Datos meteorológicos
+        recomendacion:
+          type: string
+          description: Recomendación
+          example: Las condiciones son favorables
+  securitySchemes:
+    bearerAuth:
+      type: http
+      name: bearerAuth
+      scheme: bearer
+      bearerFormat: JWT
