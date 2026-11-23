@@ -1,5 +1,6 @@
 # Maven
 target/
+/backend/target/
 
 ### STS ###
 .apt_generated
@@ -33,6 +34,16 @@ build/
 .env
 .env.*
 *.env
+!frontend/.env.example
+
+# Frontend build artifacts and local configuration
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Local validation tooling
+.tsupgrader/
 
 # Logs and temporary files
 logs/
