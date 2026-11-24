@@ -43,12 +43,12 @@ export function LoginPage() {
       <section className="auth-visual">
         <Link className="brand brand-light" to="/login">
           <span className="brand-mark">C</span>
-          <span><strong>ClimaPlan</strong><small>viaja con buen tiempo</small></span>
+          <span><strong>ClimaPlan</strong></span>
         </Link>
         <div className="auth-visual-copy">
-          <span className="eyebrow eyebrow-light">PLANEA SIN IMPROVISAR</span>
-          <h1>Tu próxima aventura, con el clima de tu lado.</h1>
-          <p>Organiza tus planes y descubre qué te espera en cada destino.</p>
+          <span className="eyebrow eyebrow-light">TU ESPACIO DE VIAJE</span>
+          <h1>Organiza tus planes y consulta el clima.</h1>
+          <p>Actividades, destinos guardados y condiciones actuales en un solo lugar.</p>
         </div>
         <div className="sun-illustration" aria-hidden="true">
           <span className="sun-core" />
@@ -60,7 +60,7 @@ export function LoginPage() {
 
       <section className="auth-form-side">
         <div className="auth-card">
-          <span className="eyebrow">BIENVENIDO DE NUEVO</span>
+          <span className="eyebrow">CUENTA</span>
           <h2>Inicia sesión</h2>
           <p className="muted">Ingresa tus datos para continuar con tus planes.</p>
 
@@ -93,7 +93,7 @@ export function LoginPage() {
               />
             </label>
             <button className="button button-primary button-wide" disabled={submitting}>
-              {submitting ? 'Entrando...' : 'Entrar a ClimaPlan'}
+              {submitting ? 'Entrando...' : 'Iniciar sesión'}
               {!submitting && <span aria-hidden="true">→</span>}
             </button>
           </form>

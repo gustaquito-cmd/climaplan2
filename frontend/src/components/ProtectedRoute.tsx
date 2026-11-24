@@ -2,6 +2,22 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { AppLayout } from './AppLayout'
 
+export function AdminRoute() {
+  const { user } = useAuth()
+
+  if (user?.rol !== 'ROLE_ADMIN') {
+    return (
+      <Navigate
+        to="/dashboard"
+        replace
+        state={{ adminAccessDenied: true }}
+      />
+    )
+  }
+
+  return <Outlet />
+}
+
 export function ProtectedRoute() {
   const { token, loading } = useAuth()
   const location = useLocation()

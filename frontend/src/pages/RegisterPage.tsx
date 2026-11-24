@@ -40,12 +40,12 @@ export function RegisterPage() {
       <section className="auth-visual">
         <Link className="brand brand-light" to="/login">
           <span className="brand-mark">C</span>
-          <span><strong>ClimaPlan</strong><small>viaja con buen tiempo</small></span>
+          <span><strong>ClimaPlan</strong></span>
         </Link>
         <div className="auth-visual-copy">
-          <span className="eyebrow eyebrow-light">UN BUEN VIAJE EMPIEZA AQUÍ</span>
-          <h1>Guarda tus destinos. Sigue el pronóstico. Disfruta.</h1>
-          <p>Tu espacio para convertir ideas de viaje en planes listos.</p>
+          <span className="eyebrow eyebrow-light">CLIMAPLAN</span>
+          <h1>Planes, destinos y clima en un solo lugar.</h1>
+          <p>Crea tu cuenta para empezar a organizar tus actividades.</p>
         </div>
         <div className="sun-illustration" aria-hidden="true">
           <span className="sun-core" />

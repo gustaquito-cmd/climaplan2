@@ -1,16 +1,20 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import type { ReactNode } from 'react'
+import { Icon, type IconName } from './Icon'
 
-const navigation = [
-  { to: '/dashboard', label: 'Inicio', icon: '⌂' },
-  { to: '/plans', label: 'Mis planes', icon: '✈' },
-  { to: '/favorites', label: 'Favoritos', icon: '♡' },
-  { to: '/weather', label: 'Clima', icon: '☼' },
+const navigation: { to: string; label: string; icon: IconName }[] = [
+  { to: '/dashboard', label: 'Inicio', icon: 'home' },
+  { to: '/plans', label: 'Mis planes', icon: 'calendar' },
+  { to: '/favorites', label: 'Favoritos', icon: 'heart' },
+  { to: '/weather', label: 'Clima', icon: 'cloud' },
 ]
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
+  const items = user?.rol === 'ROLE_ADMIN'
+    ? [...navigation, { to: '/admin', label: 'Administración', icon: 'users' as const }]
+    : navigation
 
   return (
     <div className="app-shell">
@@ -19,19 +23,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <span className="brand-mark">C</span>
           <span>
             <strong>ClimaPlan</strong>
-            <small>viaja con buen tiempo</small>
           </span>
         </NavLink>
 
         <div className="nav-caption">MENÚ</div>
         <nav className="side-nav" aria-label="Navegación principal">
-          {navigation.map((item) => (
+          {items.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
             >
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+              <span className="nav-icon"><Icon name={item.icon} /></span>
               {item.label}
             </NavLink>
           ))}
@@ -42,18 +45,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <span className="avatar">{user?.nombre?.slice(0, 1).toUpperCase() ?? '?'}</span>
             <span className="profile-copy">
               <strong>{user?.nombre ?? 'Cuenta'}</strong>
-              <small>{user?.rol?.replace('ROLE_', '') ?? 'ClimaPlan'}</small>
+              <small>{user?.email ?? 'ClimaPlan'}</small>
             </span>
           </div>
           <button className="logout-button" onClick={logout} type="button">
-            <span aria-hidden="true">↗</span> Cerrar sesión
+            <Icon name="logout" /> Cerrar sesión
           </button>
         </div>
       </aside>
 
       <main className="main-area">
         <header className="topbar">
-          <span className="topbar-date">TU ESPACIO DE VIAJE</span>
+          <span className="topbar-date">ClimaPlan</span>
           <span className="topbar-user">{user?.email}</span>
         </header>
         <div className="page-content">{children}</div>

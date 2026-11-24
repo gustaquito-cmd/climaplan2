@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { weatherApi } from '../api/weather'
 import { getApiErrorMessage } from '../api/errors'
 import { ErrorMessage, LoadingState } from '../components/Feedback'
+import { Icon } from '../components/Icon'
+import { PageHeader } from '../components/PageHeader'
 import type { Weather } from '../types'
 
 export function WeatherPage() {
@@ -12,11 +14,13 @@ export function WeatherPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const query = city.trim()
+    if (!query) return
     setLoading(true)
     setError('')
     setWeather(null)
     try {
-      setWeather(await weatherApi.current(city.trim()))
+      setWeather(await weatherApi.current(query))
     } catch (requestError) {
       setError(getApiErrorMessage(requestError))
     } finally {
@@ -26,57 +30,47 @@ export function WeatherPage() {
 
   return (
     <section>
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">EL PRONÓSTICO DE TU DESTINO</span>
-          <h1>Consulta el clima</h1>
-          <p>Escribe una ciudad y revisa sus condiciones actuales antes de salir.</p>
-        </div>
-        <span className="heading-stamp stamp-sun" aria-hidden="true">☼</span>
-      </div>
+      <PageHeader
+        title="Consultar clima"
+        description="Busca las condiciones actuales de una ciudad."
+      />
 
-      <section className="weather-search-panel">
-        <div className="weather-search-copy">
-          <span className="eyebrow eyebrow-light">¿QUÉ TIEMPO HACE?</span>
-          <h2>Elige tu próxima parada</h2>
-          <p>Consulta temperatura, humedad y viento en un instante.</p>
-        </div>
-        <form className="weather-search-form" onSubmit={handleSubmit}>
-          <label className="visually-hidden" htmlFor="weather-city">Ciudad</label>
-          <input
-            id="weather-city"
-            name="city"
-            value={city}
-            onChange={(event) => setCity(event.target.value)}
-            placeholder="Ej. Madrid"
-            required
-          />
-          <button className="button button-light" disabled={loading}>
-            {loading ? 'Buscando...' : 'Consultar'} <span aria-hidden="true">→</span>
-          </button>
-        </form>
-      </section>
+      <form className="weather-search-form" onSubmit={handleSubmit}>
+        <label className="visually-hidden" htmlFor="weather-city">Ciudad</label>
+        <Icon name="pin" size={18} />
+        <input
+          id="weather-city"
+          name="city"
+          value={city}
+          onChange={(event) => setCity(event.target.value)}
+          placeholder="Nombre de la ciudad"
+          autoComplete="address-level2"
+          required
+        />
+        <button className="button button-primary" disabled={loading}>
+          {loading ? 'Buscando...' : 'Buscar'}
+        </button>
+      </form>
 
       {error && <ErrorMessage message={error} />}
-      {loading && <LoadingState label="Buscando condiciones actuales..." />}
+      {loading && <LoadingState label="Consultando condiciones actuales..." />}
 
       {weather && (
-        <article className="weather-result">
+        <article className="weather-result" aria-label={`Clima en ${weather.ciudad}`}>
           <div className="weather-result-main">
-            <span className="weather-sun" aria-hidden="true">☀</span>
-            <div>
-              <span className="eyebrow">CLIMA ACTUAL</span>
+            <span className="weather-symbol"><Icon name="cloud" size={23} /></span>
+            <div className="weather-location">
+              <span className="eyebrow">CONDICIONES ACTUALES</span>
               <h2>{weather.ciudad}, {weather.pais}</h2>
               <p>{weather.descripcion}</p>
             </div>
-            <strong className="temperature">{Math.round(weather.temperatura)}°</strong>
+            <strong className="temperature">{Math.round(weather.temperatura)}<span>°C</span></strong>
           </div>
-          <div className="weather-metrics">
-            <div><span>Sensación térmica</span><strong>{weather.sensacionTermica}°C</strong></div>
-            <div><span>Humedad</span><strong>{weather.humedad}%</strong></div>
-            <div><span>Viento</span><strong>{weather.velocidadViento} m/s</strong></div>
-            <div><span>Coordenadas</span><strong>{weather.lat}, {weather.lon}</strong></div>
-          </div>
+          <dl className="weather-metrics">
+            <div><dt>Sensación térmica</dt><dd>{weather.sensacionTermica}°C</dd></div>
+            <div><dt>Humedad</dt><dd>{weather.humedad}%</dd></div>
+            <div><dt>Viento</dt><dd>{weather.velocidadViento} m/s</dd></div>
+          </dl>
         </article>
       )}
     </section>

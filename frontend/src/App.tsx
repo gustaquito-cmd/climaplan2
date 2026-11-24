@@ -1,14 +1,16 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { ProtectedRoute } from './components/ProtectedRoute'
+import { AdminRoute, ProtectedRoute } from './components/ProtectedRoute'
 import { LoadingState } from './components/Feedback'
 import { DashboardPage } from './pages/DashboardPage'
+import { AdminPage } from './pages/AdminPage'
 import { FavoritesPage } from './pages/FavoritesPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PlansPage } from './pages/PlansPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { WeatherPage } from './pages/WeatherPage'
+import { ToastProvider } from './context/ToastContext'
 
 function HomeRedirect() {
   const { token, loading } = useAuth()
@@ -27,6 +29,9 @@ function AppRoutes() {
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/weather" element={<WeatherPage />} />
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminPage />} />
+        </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
@@ -37,7 +42,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   )

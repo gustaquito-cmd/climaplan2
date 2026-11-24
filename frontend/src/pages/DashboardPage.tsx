@@ -1,36 +1,78 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { favoritesApi } from '../api/favorites'
+import { plansApi } from '../api/plans'
 import { ErrorMessage, LoadingState } from '../components/Feedback'
+import { Icon, type IconName } from '../components/Icon'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 
-const shortcuts = [
+const shortcuts: {
+  to: string
+  icon: IconName
+  title: string
+  description: string
+  count?: 'plans' | 'favorites'
+}[] = [
   {
     to: '/plans',
-    icon: '✈',
-    title: 'Mis planes',
-    description: 'Organiza y consulta tus próximas actividades.',
-    action: 'Ver planes',
-    tone: 'sky',
-  },
-  {
-    to: '/weather',
-    icon: '☼',
-    title: 'Consulta el clima',
-    description: 'Revisa las condiciones actuales de cualquier ciudad.',
-    action: 'Consultar clima',
-    tone: 'sun',
+    icon: 'calendar',
+    title: 'Planes',
+    description: 'Organiza tus próximas actividades.',
+    count: 'plans',
   },
   {
     to: '/favorites',
-    icon: '♡',
-    title: 'Destinos favoritos',
-    description: 'Guarda lugares que quieres conocer.',
-    action: 'Ver favoritos',
-    tone: 'mint',
+    icon: 'heart',
+    title: 'Favoritos',
+    description: 'Accede a tus destinos guardados.',
+    count: 'favorites',
+  },
+  {
+    to: '/weather',
+    icon: 'cloud',
+    title: 'Consultar clima',
+    description: 'Revisa las condiciones actuales de una ciudad.',
   },
 ]
 
 export function DashboardPage() {
   const { user, loading, profileError, reloadProfile } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { showToast } = useToast()
+  const [planCount, setPlanCount] = useState<number | null>(null)
+  const [favoriteCount, setFavoriteCount] = useState<number | null>(null)
+  const [countError, setCountError] = useState('')
+  const handledAdminAccessDenied = useRef(false)
+  const adminAccessDenied =
+    typeof location.state === 'object' &&
+    location.state !== null &&
+    'adminAccessDenied' in location.state &&
+    location.state.adminAccessDenied === true
+
+  useEffect(() => {
+    if (!adminAccessDenied || handledAdminAccessDenied.current) return
+    handledAdminAccessDenied.current = true
+    showToast('No tienes permisos para acceder a esta sección.')
+    navigate('/dashboard', { replace: true, state: null })
+  }, [adminAccessDenied, navigate, showToast])
+
+  useEffect(() => {
+    let active = true
+    void Promise.allSettled([plansApi.list(), favoritesApi.list()]).then((results) => {
+      if (!active) return
+      const [plans, favorites] = results
+      if (plans.status === 'fulfilled') setPlanCount(plans.value.length)
+      if (favorites.status === 'fulfilled') setFavoriteCount(favorites.value.length)
+      if (plans.status === 'rejected' || favorites.status === 'rejected') {
+        setCountError('No se pudieron cargar todos los contadores.')
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   if (loading) return <LoadingState label="Cargando tu perfil..." />
   if (profileError) {
@@ -46,50 +88,36 @@ export function DashboardPage() {
 
   return (
     <section>
-      <div className="welcome-panel">
+      <header className="dashboard-welcome">
         <div>
-          <span className="eyebrow eyebrow-light">TU TABLERO PERSONAL</span>
-          <h1>Hola, {user?.nombre?.split(' ')[0] ?? 'viajero'} <span aria-hidden="true">✦</span></h1>
-          <p>¿Qué lugar te gustaría descubrir hoy?</p>
+          <span className="eyebrow">INICIO</span>
+          <h1>Hola, {user?.nombre?.split(' ')[0] ?? 'Gustavo'}</h1>
+          <p>Accede a tus planes, destinos favoritos y consultas del clima.</p>
         </div>
-        <div className="welcome-weather" aria-hidden="true">
-          <span>☀</span>
-          <small>un buen día<br />para planear</small>
-        </div>
-      </div>
-
-      <div className="section-heading dashboard-heading">
-        <div>
-          <span className="eyebrow">TU CUENTA</span>
-          <h2>Todo listo para tu próxima aventura</h2>
-        </div>
-      </div>
-
-      <div className="account-card">
-        <div className="account-avatar">{user?.nombre?.slice(0, 1).toUpperCase() ?? '?'}</div>
-        <div className="account-details">
-          <strong>{user?.nombre}</strong>
-          <span>{user?.email}</span>
-        </div>
-        <span className="role-badge">{user?.rol}</span>
-      </div>
+      </header>
 
       <div className="section-heading">
-        <div>
-          <span className="eyebrow">ACCESOS RÁPIDOS</span>
-          <h2>¿A dónde vamos?</h2>
-        </div>
+        <h2>Accesos rápidos</h2>
       </div>
-
+      {countError && <ErrorMessage message={countError} />}
       <div className="shortcut-grid">
-        {shortcuts.map((shortcut) => (
-          <Link className="shortcut-card" to={shortcut.to} key={shortcut.to}>
-            <span className={`shortcut-icon ${shortcut.tone}`} aria-hidden="true">{shortcut.icon}</span>
-            <h3>{shortcut.title}</h3>
-            <p>{shortcut.description}</p>
-            <span className="shortcut-action">{shortcut.action} <span aria-hidden="true">→</span></span>
-          </Link>
-        ))}
+        {shortcuts.map((shortcut) => {
+          const count = shortcut.count === 'plans'
+            ? planCount
+            : shortcut.count === 'favorites'
+              ? favoriteCount
+              : null
+          return (
+            <Link className="shortcut-card" to={shortcut.to} key={shortcut.to}>
+              <span className="shortcut-icon"><Icon name={shortcut.icon} size={19} /></span>
+              <span className="shortcut-copy">
+                <strong>{shortcut.title}</strong>
+                <small>{shortcut.description}</small>
+              </span>
+              {count !== null && <span className="shortcut-count" aria-label={`${count} elementos`}>{count ?? '—'}</span>}
+            </Link>
+          )
+        })}
       </div>
     </section>
   )

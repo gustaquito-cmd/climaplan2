@@ -85,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     storeAccessToken(response.accessToken)
     setUser(response.usuario)
     setProfileError(null)
+    setLoading(true)
     setToken(response.accessToken)
   }, [])
 
