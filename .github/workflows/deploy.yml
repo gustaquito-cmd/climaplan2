@@ -111,4 +111,4 @@ jobs:
       - name: Deploy backend to Railway
         env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
-        run: railway up --service climaplan2 --ci
+        run: railway up --project d1582111-2a8e-410b-80bb-07a3514101b8 --environment production --service climaplan2 --ci
