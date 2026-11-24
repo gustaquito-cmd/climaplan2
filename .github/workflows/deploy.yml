@@ -110,5 +110,5 @@ jobs:
       # Railway uses its configured /backend Root Directory; upload starts at the repository root.
       - name: Deploy backend to Railway
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
         run: railway up --service climaplan2 --ci
