@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getApiErrorMessage } from '../api/errors'
 import { plansApi } from '../api/plans'
@@ -47,6 +47,12 @@ export function PlansPage() {
   const [loadingWeatherId, setLoadingWeatherId] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [loadError, setLoadError] = useState('')
+  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(() => new Set())
+  const [favoritesLoading, setFavoritesLoading] = useState(true)
+  const [favoriteLoadError, setFavoriteLoadError] = useState('')
+  const [favoriteError, setFavoriteError] = useState('')
+  const [pendingFavoriteIds, setPendingFavoriteIds] = useState<Set<number>>(() => new Set())
+  const pendingFavorites = useRef(new Set<number>())
   const [formOpen, setFormOpen] = useState(false)
   const [viewPlan, setViewPlan] = useState<Plan | null>(null)
   const [deletePlan, setDeletePlan] = useState<Plan | null>(null)
@@ -83,6 +89,48 @@ export function PlansPage() {
   useEffect(() => {
     void loadPlans()
   }, [loadPlans])
+
+  const loadFavorites = useCallback(async () => {
+    setFavoritesLoading(true)
+    setFavoriteLoadError('')
+    try {
+      setFavoriteIds(new Set(await plansApi.listFavoriteIds()))
+    } catch (requestError) {
+      setFavoriteLoadError(getApiErrorMessage(requestError))
+    } finally {
+      setFavoritesLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadFavorites()
+  }, [loadFavorites])
+
+  async function toggleFavorite(plan: Plan) {
+    if (pendingFavorites.current.has(plan.id) || favoritesLoading || favoriteLoadError) return
+    pendingFavorites.current.add(plan.id)
+    setPendingFavoriteIds(new Set(pendingFavorites.current))
+    setFavoriteError('')
+    try {
+      const isFavorite = favoriteIds.has(plan.id)
+      if (isFavorite) {
+        await plansApi.removeFavorite(plan.id)
+      } else {
+        await plansApi.addFavorite(plan.id)
+      }
+      setFavoriteIds((current) => {
+        const next = new Set(current)
+        if (isFavorite) next.delete(plan.id)
+        else next.add(plan.id)
+        return next
+      })
+    } catch (requestError) {
+      setFavoriteError(getApiErrorMessage(requestError))
+    } finally {
+      pendingFavorites.current.delete(plan.id)
+      setPendingFavoriteIds(new Set(pendingFavorites.current))
+    }
+  }
 
   function updateField<K extends keyof PlanInput>(field: K, value: PlanInput[K]) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -322,6 +370,15 @@ export function PlansPage() {
 
       {error && <ErrorMessage message={error} />}
       {loadError && <ErrorMessage message={loadError} />}
+      {favoriteError && <ErrorMessage message={favoriteError} />}
+      {favoriteLoadError && (
+        <div>
+          <ErrorMessage message={`No se pudieron cargar los favoritos: ${favoriteLoadError}`} />
+          <button className="text-button" type="button" onClick={() => void loadFavorites()}>
+            Reintentar favoritos
+          </button>
+        </div>
+      )}
       {loading ? (
         <LoadingState label="Cargando planes..." />
       ) : plans.length === 0 ? (
@@ -344,6 +401,10 @@ export function PlansPage() {
                 plan={plan}
                 loadingPlan={loadingPlanId === plan.id}
                 loadingWeather={loadingWeatherId === plan.id}
+                isFavorite={favoriteIds.has(plan.id)}
+                favoriteLoading={pendingFavoriteIds.has(plan.id)}
+                favoriteUnavailable={favoritesLoading || Boolean(favoriteLoadError)}
+                onToggleFavorite={(item) => void toggleFavorite(item)}
                 onView={setViewPlan}
                 onEdit={(item) => void beginEdit(item.id)}
                 onWeather={(item) => void checkWeather(item)}

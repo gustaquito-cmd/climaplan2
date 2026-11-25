@@ -55,6 +55,9 @@ public class Plan {
     @OneToMany(mappedBy = "plan", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<PlanMessage> messages = new ArrayList<>();
 
+    @OneToMany(mappedBy = "plan", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<PlanFavorite> favorites = new ArrayList<>();
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoPlan estado;
@@ -128,5 +131,13 @@ public class Plan {
 
     public List<PlanMessage> getMessages() {
         return messages;
+    }
+
+    public void addFavorite(PlanFavorite favorite) {
+        favorites.add(favorite);
+    }
+
+    public void removeFavorite(PlanFavorite favorite) {
+        favorites.remove(favorite);
     }
 }

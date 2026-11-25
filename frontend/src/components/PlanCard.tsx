@@ -5,6 +5,10 @@ interface PlanCardProps {
   plan: Plan
   loadingPlan: boolean
   loadingWeather: boolean
+  isFavorite: boolean
+  favoriteLoading: boolean
+  favoriteUnavailable: boolean
+  onToggleFavorite: (plan: Plan) => void
   onView: (plan: Plan) => void
   onEdit: (plan: Plan) => void
   onWeather: (plan: Plan) => void
@@ -22,6 +26,10 @@ export function PlanCard({
   plan,
   loadingPlan,
   loadingWeather,
+  isFavorite,
+  favoriteLoading,
+  favoriteUnavailable,
+  onToggleFavorite,
   onView,
   onEdit,
   onWeather,
@@ -51,6 +59,21 @@ export function PlanCard({
         </p>
       </div>
       <div className="card-actions">
+        <button
+          className="text-button plan-favorite-button"
+          type="button"
+          title={`${isFavorite ? 'Quitar de' : 'Agregar a'} favoritos: ${plan.titulo}`}
+          aria-label={`${isFavorite ? 'Quitar de' : 'Agregar a'} favoritos: ${plan.titulo}`}
+          aria-pressed={isFavorite}
+          disabled={favoriteLoading || favoriteUnavailable}
+          onClick={(event) => {
+            event.stopPropagation()
+            onToggleFavorite(plan)
+          }}
+        >
+          <span aria-hidden="true">{isFavorite ? '★' : '☆'}</span>
+          {favoriteLoading && 'Guardando...'}
+        </button>
         <button className="text-button" onClick={() => onView(plan)} type="button" aria-label={`Ver ${plan.titulo}`}>
           <Icon name="eye" size={15} /> Ver
         </button>

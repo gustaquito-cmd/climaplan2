@@ -25,6 +25,10 @@ Los enlaces públicos usan un token generado a partir de 32 bytes de `SecureRand
 
 La entidad `PlanShare` añade la tabla `plan_shares`. `spring.jpa.hibernate.ddl-auto=update` crea/actualiza esta tabla al iniciar el backend; no se requiere una migración manual para este cambio.
 
+### Favoritos de planes
+
+Cada usuario puede marcar planes visibles como favoritos desde sus tarjetas. Estos favoritos son independientes de los destinos favoritos y se almacenan en `plan_favorites`, tabla creada por `spring.jpa.hibernate.ddl-auto=update`. Si un usuario pierde acceso a un plan, este deja de aparecer en sus favoritos visibles; al eliminar el plan también se eliminan sus marcas.
+
 ### Verificación de correo
 
 El registro crea cuentas sin verificar y envía un código OTP de seis dígitos. El código se almacena como HMAC, vence en cinco minutos, permite hasta cinco intentos y solo puede usarse una vez. El reenvío tiene un cooldown de 60 segundos e invalida el código anterior.

@@ -19,6 +19,10 @@ const plan: Plan = {
 const callbacks = {
   loadingPlan: false,
   loadingWeather: false,
+  isFavorite: false,
+  favoriteLoading: false,
+  favoriteUnavailable: false,
+  onToggleFavorite: () => {},
   onView: () => {},
   onEdit: () => {},
   onWeather: () => {},
@@ -54,5 +58,21 @@ describe('PlanCard', () => {
     expect(markup).not.toContain('Editar')
     expect(markup).not.toContain('Compartir')
     expect(markup).not.toContain('Eliminar')
+  })
+
+  it('muestra estado accesible y deshabilita la estrella durante la solicitud', () => {
+    const unfavorited = renderToStaticMarkup(<PlanCard {...callbacks} plan={plan} />)
+    expect(unfavorited).toContain('☆')
+    expect(unfavorited).toContain('aria-pressed="false"')
+    expect(unfavorited).toContain('Agregar a favoritos: Viaje a San Cristóbal')
+
+    const pending = renderToStaticMarkup(
+      <PlanCard {...callbacks} plan={plan} isFavorite favoriteLoading />,
+    )
+    expect(pending).toContain('★')
+    expect(pending).toContain('aria-pressed="true"')
+    expect(pending).toContain('Quitar de favoritos: Viaje a San Cristóbal')
+    expect(pending).toContain('disabled=""')
+    expect(pending).toContain('Guardando...')
   })
 })

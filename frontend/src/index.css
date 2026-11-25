@@ -283,6 +283,8 @@ h1, h2, h3 { letter-spacing: -0.025em; }
 .plan-location svg { color: #729083; }
 .card-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 13px; }
 .text-button { font-size: 0.72rem; }
+.plan-favorite-button span { font-size: 1.4rem; line-height: 1; }
+.plan-favorite-button[aria-pressed="true"] { color: #b57d19; }
 .danger-text { color: var(--danger); }
 .invitations-section { margin-top: 30px; }
 .invitation-list { display: grid; gap: 9px; }

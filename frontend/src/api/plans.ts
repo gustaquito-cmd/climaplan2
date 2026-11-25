@@ -36,6 +36,19 @@ export const plansApi = {
     await api.delete(`/api/v1/plans/${id}`)
   },
 
+  async listFavoriteIds(): Promise<number[]> {
+    const response = await api.get<number[]>('/api/v1/plans/favorites')
+    return response.data
+  },
+
+  async addFavorite(id: number): Promise<void> {
+    await api.put(`/api/v1/plans/${id}/favorite`)
+  },
+
+  async removeFavorite(id: number): Promise<void> {
+    await api.delete(`/api/v1/plans/${id}/favorite`)
+  },
+
   async weatherCheck(id: number): Promise<PlanWeatherCheck> {
     const response = await api.get<PlanWeatherCheck>(
       `/api/v1/plans/${id}/weather-check`,
