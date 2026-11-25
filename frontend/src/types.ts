@@ -24,6 +24,14 @@ export interface AuthResponse {
   usuario: Usuario
 }
 
+export interface TwoFactorRequiredResponse {
+  twoFactorRequired: true
+  challengeId: string
+  message: string
+}
+
+export type AuthLoginResponse = AuthResponse | TwoFactorRequiredResponse
+
 export interface ApiErrorResponse {
   status: number
   error: string

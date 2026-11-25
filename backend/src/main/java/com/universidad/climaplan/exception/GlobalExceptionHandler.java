@@ -72,6 +72,66 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ApiErrorResponse> manejarEmailNoVerificado(
+            EmailNotVerifiedException exception,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ApiErrorResponse(
+                        403, "Forbidden", exception.getMessage(),
+                        request.getRequestURI(), LocalDateTime.now(), null
+                ));
+    }
+
+    @ExceptionHandler(EmailVerificationFailedException.class)
+    public ResponseEntity<ApiErrorResponse> manejarVerificacionFallida(
+            EmailVerificationFailedException exception,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.badRequest()
+                .body(new ApiErrorResponse(
+                        400, "Bad Request", exception.getMessage(),
+                        request.getRequestURI(), LocalDateTime.now(), null
+                ));
+    }
+
+    @ExceptionHandler(EmailDeliveryUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> manejarCorreoNoDisponible(
+            EmailDeliveryUnavailableException exception,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ApiErrorResponse(
+                        503, "Service Unavailable", exception.getMessage(),
+                        request.getRequestURI(), LocalDateTime.now(), null
+                ));
+    }
+
+    @ExceptionHandler(TwoFactorVerificationFailedException.class)
+    public ResponseEntity<ApiErrorResponse> manejarVerificacionDosFactoresFallida(
+            TwoFactorVerificationFailedException exception,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.badRequest()
+                .body(new ApiErrorResponse(
+                        400, "Bad Request", exception.getMessage(),
+                        request.getRequestURI(), LocalDateTime.now(), null
+                ));
+    }
+
+    @ExceptionHandler(TwoFactorCooldownException.class)
+    public ResponseEntity<ApiErrorResponse> manejarCooldownDosFactores(
+            TwoFactorCooldownException exception,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(new ApiErrorResponse(
+                        429, "Too Many Requests", exception.getMessage(),
+                        request.getRequestURI(), LocalDateTime.now(), null
+                ));
+    }
+
     @ExceptionHandler(ConflictoRecursoException.class)
     public ResponseEntity<ApiErrorResponse> manejarConflictoRecurso(
             ConflictoRecursoException exception,

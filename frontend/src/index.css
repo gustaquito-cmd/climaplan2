@@ -479,6 +479,9 @@ h1, h2, h3 { letter-spacing: -0.025em; }
 .auth-switch { margin: 20px 0 0; color: #77877f; font-size: 0.78rem; text-align: center; }
 .auth-switch a { color: var(--green); font-weight: 700; }
 .auth-footer { margin-top: 24px; color: #89968f; font-size: 0.69rem; }
+.verification-notice { margin-bottom: 16px; }
+.verification-resend { margin-top: 16px; }
+.verification-login-link { margin-top: 4px; }
 
 .not-found-page { display: grid; min-height: 100vh; place-content: center; justify-items: center; padding: 24px; text-align: center; }
 .not-found-mark { color: #7d9d8d; font-size: 4.4rem; font-weight: 750; letter-spacing: -0.08em; }

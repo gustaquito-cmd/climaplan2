@@ -12,6 +12,8 @@ import { PlanChatPage } from './pages/PlanChatPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { SharedPlanPage } from './pages/SharedPlanPage'
 import { WeatherPage } from './pages/WeatherPage'
+import { VerifyEmailPage } from './pages/VerifyEmailPage'
+import { VerifyTwoFactorPage } from './pages/VerifyTwoFactorPage'
 import { ToastProvider } from './context/ToastContext'
 
 function HomeRedirect() {
@@ -26,6 +28,8 @@ function AppRoutes() {
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/verify-2fa" element={<VerifyTwoFactorPage />} />
       <Route path="/shared/:token" element={<SharedPlanPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardPage />} />

@@ -13,5 +13,5 @@ public record AuthResponse(
         long expiresIn,
         @Schema(description = "Datos del usuario autenticado")
         UsuarioResponse usuario
-) {
+) implements AuthLoginResponse {
 }

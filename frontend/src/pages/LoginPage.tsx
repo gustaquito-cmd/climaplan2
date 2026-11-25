@@ -4,6 +4,7 @@ import { authApi } from '../api/auth'
 import { getApiErrorMessage } from '../api/errors'
 import { useAuth } from '../context/AuthContext'
 import { ErrorMessage } from '../components/Feedback'
+import { getLoginFlowResult } from '../utils/authFlow'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -29,8 +30,16 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       const response = await authApi.login({ email, password })
-      setAuthenticated(response)
-      navigate('/dashboard', { replace: true })
+      const result = getLoginFlowResult(response)
+      if (result.kind === 'two-factor-required') {
+        navigate('/verify-2fa', {
+          replace: true,
+          state: { challengeId: result.challengeId },
+        })
+      } else {
+        setAuthenticated(result.response)
+        navigate('/dashboard', { replace: true })
+      }
     } catch (requestError) {
       setError(getApiErrorMessage(requestError))
     } finally {
@@ -66,6 +75,11 @@ export function LoginPage() {
 
           {notice && <div className="feedback feedback-info" role="status">{notice}</div>}
           {error && <ErrorMessage message={error} />}
+          {error.includes('verificar tu correo') && (
+            <p className="auth-switch">
+              <Link to="/verify-email" state={{ email }}>Verificar mi correo</Link>
+            </p>
+          )}
 
           <form className="form-stack" onSubmit={handleSubmit} aria-label="Iniciar sesión">
             <label>

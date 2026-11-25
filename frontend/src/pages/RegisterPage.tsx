@@ -2,12 +2,10 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi } from '../api/auth'
 import { getApiErrorMessage } from '../api/errors'
-import { useAuth } from '../context/AuthContext'
 import { ErrorMessage } from '../components/Feedback'
 
 export function RegisterPage() {
   const navigate = useNavigate()
-  const { setAuthenticated } = useAuth()
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -25,9 +23,8 @@ export function RegisterPage() {
 
     setSubmitting(true)
     try {
-      const response = await authApi.register({ nombre, email, password })
-      setAuthenticated(response)
-      navigate('/dashboard', { replace: true })
+      await authApi.register({ nombre, email, password })
+      navigate('/verify-email', { replace: true, state: { email } })
     } catch (requestError) {
       setError(getApiErrorMessage(requestError))
     } finally {

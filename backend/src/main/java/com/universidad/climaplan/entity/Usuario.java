@@ -30,6 +30,9 @@ public class Usuario {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Rol rol;
@@ -70,6 +73,14 @@ public class Usuario {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified == null || emailVerified;
+    }
+
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 
     public Rol getRol() {
