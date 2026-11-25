@@ -56,4 +56,4 @@ Para desplegar el frontend en Railway, selecciona `frontend` como directorio ra�
 
 Para probar localmente contra Railway mientras el backend desplegado no permita CORS, puedes configurar `VITE_API_BASE_URL=/` y `VITE_API_PROXY_TARGET=https://climaplan2-production.up.railway.app`; el proxy de Vite es solo de desarrollo.
 
-El backend local permite por defecto el origen de Vite `http://localhost:5173`. En el backend desplegado, configura `CORS_ALLOWED_ORIGINS` con los orígenes frontend exactos separados por comas, por ejemplo `http://localhost:5173,https://tu-frontend.example.com`. No uses comodines con credenciales.
+El backend local permite por defecto el origen de Vite `http://localhost:5173`. En el backend desplegado, configura `CORS_ALLOWED_ORIGINS` con los orígenes frontend exactos separados por comas: `http://localhost:5173,https://eloquent-encouragement-production-fd1af15a.up.railway.app`. Esta lista se aplica a REST y al handshake WebSocket; no admite `*`.

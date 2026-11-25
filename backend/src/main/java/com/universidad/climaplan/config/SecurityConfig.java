@@ -45,18 +45,28 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource(
+    public CorsConfiguration corsConfiguration(
             @Value("${CORS_ALLOWED_ORIGINS:http://localhost:5173}") List<String> allowedOrigins
     ) {
+        List<String> origins = allowedOrigins.stream().map(String::trim).toList();
+        if (origins.isEmpty() || origins.stream().anyMatch(origin -> origin.isEmpty() || origin.equals("*"))) {
+            throw new IllegalArgumentException("CORS_ALLOWED_ORIGINS debe contener orígenes explícitos");
+        }
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
         configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
+        return configuration;
+    }
 
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource(CorsConfiguration configuration) {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", configuration);
+        source.registerCorsConfiguration("/ws", configuration);
+        source.registerCorsConfiguration("/ws/**", configuration);
         return source;
     }
 
