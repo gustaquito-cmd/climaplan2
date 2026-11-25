@@ -1,25 +1,36 @@
 package com.universidad.climaplan.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.universidad.climaplan.exception.EmailDeliveryUnavailableException;
 import jakarta.mail.AuthenticationFailedException;
 import jakarta.mail.MessagingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import javax.net.ssl.SSLException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,28 +40,51 @@ public class ConfigurableEmailService implements EmailService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurableEmailService.class);
     private static final Pattern SMTP_STATUS = Pattern.compile("^\\s*([245][0-5][0-9])(?:[ -]|$)");
+    private static final String BREVO_ENDPOINT = "https://api.brevo.com/v3/smtp/email";
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
     private final String provider;
     private final String from;
     private final String host;
     private final int port;
+    private final String brevoApiKey;
+    private final RestClient brevoClient;
 
+    @Autowired
     public ConfigurableEmailService(
             ObjectProvider<JavaMailSender> mailSenderProvider,
             @Value("${app.email.provider:none}") String provider,
             @Value("${app.email.from:}") String from,
             @Value("${spring.mail.host:}") String host,
-            @Value("${spring.mail.port:587}") int port
+            @Value("${spring.mail.port:587}") int port,
+            @Value("${app.email.brevo-api-key:}") String brevoApiKey
+    ) {
+        this(mailSenderProvider, provider, from, host, port, brevoApiKey, createBrevoClient());
+    }
+
+    ConfigurableEmailService(
+            ObjectProvider<JavaMailSender> mailSenderProvider,
+            String provider, String from, String host, int port, String brevoApiKey, RestClient brevoClient
     ) {
         this.mailSenderProvider = mailSenderProvider;
         this.provider = provider;
         this.from = from;
         this.host = host;
         this.port = port;
+        this.brevoApiKey = brevoApiKey;
+        this.brevoClient = brevoClient;
     }
 
     @Override
     public boolean isConfigured() {
+        if ("brevo_api".equalsIgnoreCase(provider)) {
+            boolean configured = !from.isBlank() && !brevoApiKey.isBlank();
+            if (!configured) {
+                LOGGER.warn("Brevo API no configurada: remitentePresente={}, clavePresente={}",
+                        !from.isBlank(), !brevoApiKey.isBlank());
+            }
+            return configured;
+        }
         boolean configured = "smtp".equalsIgnoreCase(provider)
                 && !from.isBlank()
                 && !host.isBlank()
@@ -81,6 +115,10 @@ public class ConfigurableEmailService implements EmailService {
     }
 
     private void sendCode(String email, String code, String subject, String body) {
+        if ("brevo_api".equalsIgnoreCase(provider)) {
+            sendWithBrevo(email, subject, body);
+            return;
+        }
         JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
         if (!"smtp".equalsIgnoreCase(provider) || from.isBlank() || host.isBlank() || mailSender == null) {
             LOGGER.warn("SMTP no configurado: provider={}, host={}, port={}, remitentePresente={}, senderDisponible={}",
@@ -99,6 +137,51 @@ public class ConfigurableEmailService implements EmailService {
             logSmtpFailure(exception);
             throw new EmailDeliveryUnavailableException(exception);
         }
+    }
+
+    private void sendWithBrevo(String email, String subject, String body) {
+        if (!isConfigured()) {
+            throw new EmailDeliveryUnavailableException();
+        }
+        Map<String, Object> payload = Map.of(
+                "sender", Map.of("name", "ClimaPlan", "email", from),
+                "to", List.of(Map.of("email", email)),
+                "subject", subject,
+                "textContent", body
+        );
+        try {
+            brevoClient.post()
+                    .uri(BREVO_ENDPOINT)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("api-key", brevoApiKey)
+                    // RestClient logs object bodies at DEBUG; byte arrays do not expose their contents.
+                    .body(JSON_MAPPER.writeValueAsBytes(payload))
+                    .exchange((request, response) -> {
+                        if (!response.getStatusCode().is2xxSuccessful()) {
+                            LOGGER.warn("Brevo API rechazó el envío: status={}", response.getStatusCode().value());
+                            throw new EmailDeliveryUnavailableException();
+                        }
+                        return null;
+                    });
+        } catch (JsonProcessingException exception) {
+            LOGGER.warn("Brevo API no disponible: no se pudo preparar la solicitud");
+            throw new EmailDeliveryUnavailableException();
+        } catch (RestClientException exception) {
+            LOGGER.warn("Brevo API no disponible: fallo de transporte, tipo={}",
+                    exception.getClass().getSimpleName());
+            throw new EmailDeliveryUnavailableException();
+        }
+    }
+
+    private static RestClient createBrevoClient() {
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .build();
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(Duration.ofSeconds(20));
+        return RestClient.builder().requestFactory(requestFactory).build();
     }
 
     private void logSmtpFailure(MailException exception) {

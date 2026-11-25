@@ -83,7 +83,7 @@ class ConfigurableEmailServiceTest {
     }
 
     private ConfigurableEmailService service(String provider, String host) {
-        return new ConfigurableEmailService(senderProvider, provider, "sender@example.com", host, 587);
+        return new ConfigurableEmailService(senderProvider, provider, "sender@example.com", host, 587, "");
     }
 
     private void assertNoSecrets(CapturedOutput output) {

@@ -29,11 +29,11 @@ La entidad `PlanShare` añade la tabla `plan_shares`. `spring.jpa.hibernate.ddl-
 
 El registro crea cuentas sin verificar y envía un código OTP de seis dígitos. El código se almacena como HMAC, vence en cinco minutos, permite hasta cinco intentos y solo puede usarse una vez. El reenvío tiene un cooldown de 60 segundos e invalida el código anterior.
 
-El envío está preparado para cualquier relay SMTP compatible. Para habilitarlo, configura `EMAIL_PROVIDER=smtp`, `MAIL_FROM`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME` y `MAIL_PASSWORD`. `MAIL_SMTP_AUTH` y `MAIL_SMTP_STARTTLS_ENABLE` controlan autenticación y STARTTLS. No hay proveedor real habilitado por defecto (`EMAIL_PROVIDER=none`); mientras no se configure, registro y reenvío responden con servicio no disponible sin exponer códigos.
+Para enviar mediante la API HTTPS de Brevo, configura `EMAIL_PROVIDER=brevo_api`, `BREVO_API_KEY` y `MAIL_FROM` (remitente autorizado en Brevo). También se puede usar un relay SMTP con `EMAIL_PROVIDER=smtp`, `MAIL_FROM`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME` y `MAIL_PASSWORD`. `MAIL_SMTP_AUTH` y `MAIL_SMTP_STARTTLS_ENABLE` controlan autenticación y STARTTLS. No hay proveedor habilitado por defecto (`EMAIL_PROVIDER=none`); mientras no se configure, registro y reenvío responden con servicio no disponible sin exponer códigos.
 
 Hibernate crea/actualiza la tabla `email_verification_codes` y agrega `usuarios.email_verified` como columna nullable, sin eliminar datos. Los usuarios existentes con valor `NULL` se consideran verificados; las cuentas nuevas se guardan explícitamente con `false`.
 
-El segundo factor por correo puede activarse después de configurar SMTP con `TWO_FACTOR_ENABLED=true`. Por defecto está desactivado; al habilitarlo, el login correcto envía un OTP y no emite JWT hasta verificarlo. Los challenges se almacenan en `two_factor_challenges` con hash HMAC, vencen en cinco minutos y permiten cinco intentos. Hay un cooldown de 60 segundos entre envíos para la misma cuenta.
+El segundo factor por correo puede activarse después de configurar el envío con `TWO_FACTOR_ENABLED=true`. Por defecto está desactivado; al habilitarlo, el login correcto envía un OTP y no emite JWT hasta verificarlo. Los challenges se almacenan en `two_factor_challenges` con hash HMAC, vencen en cinco minutos y permiten cinco intentos. Hay un cooldown de 60 segundos entre envíos para la misma cuenta.
 
 ### Chat privado por plan
 
