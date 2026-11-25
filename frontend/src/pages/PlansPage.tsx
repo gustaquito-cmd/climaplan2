@@ -6,6 +6,8 @@ import { EmptyState, ErrorMessage, LoadingState } from '../components/Feedback'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { PageHeader } from '../components/PageHeader'
+import { PlanCard } from '../components/PlanCard'
+import { PlanMembersModal } from '../components/PlanMembersModal'
 import { PlanStatusField } from '../components/PlanStatusField'
 import { WeatherResult } from '../components/WeatherResult'
 import { useToast } from '../context/ToastContext'
@@ -15,6 +17,7 @@ import type {
   PlanInput,
   PlanShareStatus,
   PlanWeatherCheck,
+  PlanMember,
 } from '../types'
 
 const emptyPlan = (): PlanInput => ({
@@ -54,6 +57,14 @@ export function PlansPage() {
   const [shareRevoking, setShareRevoking] = useState(false)
   const [shareError, setShareError] = useState('')
   const [confirmShareRevocation, setConfirmShareRevocation] = useState(false)
+  const [membersPlan, setMembersPlan] = useState<Plan | null>(null)
+  const [members, setMembers] = useState<PlanMember[]>([])
+  const [membersLoading, setMembersLoading] = useState(false)
+  const [membersError, setMembersError] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [invitingMember, setInvitingMember] = useState(false)
+  const [removingMember, setRemovingMember] = useState<PlanMember | null>(null)
+  const [removingMemberId, setRemovingMemberId] = useState<number | null>(null)
 
   const loadPlans = useCallback(async () => {
     setLoading(true)
@@ -238,6 +249,61 @@ export function PlansPage() {
     }
   }
 
+  async function openMembers(plan: Plan) {
+    setMembersPlan(plan)
+    setMembers([])
+    setInviteEmail('')
+    setMembersError('')
+    setMembersLoading(true)
+    try {
+      setMembers(await plansApi.listMembers(plan.id))
+    } catch (requestError) {
+      setMembersError(getApiErrorMessage(requestError))
+    } finally {
+      setMembersLoading(false)
+    }
+  }
+
+  async function inviteMember() {
+    if (!membersPlan) return
+    setInvitingMember(true)
+    setMembersError('')
+    try {
+      await plansApi.inviteMember(membersPlan.id, inviteEmail)
+      setInviteEmail('')
+      setMembers(await plansApi.listMembers(membersPlan.id))
+      showToast('Invitación enviada.')
+    } catch (requestError) {
+      setMembersError(getApiErrorMessage(requestError))
+    } finally {
+      setInvitingMember(false)
+    }
+  }
+
+  async function confirmRemoveMember() {
+    if (!membersPlan || !removingMember) return
+    setRemovingMemberId(removingMember.id)
+    setMembersError('')
+    try {
+      await plansApi.removeMember(membersPlan.id, removingMember.id)
+      setMembers(await plansApi.listMembers(membersPlan.id))
+      setRemovingMember(null)
+      showToast('Participante eliminado.')
+    } catch (requestError) {
+      setMembersError(getApiErrorMessage(requestError))
+      setRemovingMember(null)
+    } finally {
+      setRemovingMemberId(null)
+    }
+  }
+
+  function closeMembers() {
+    if (invitingMember || removingMemberId !== null) return
+    setMembersPlan(null)
+    setMembers([])
+    setMembersError('')
+  }
+
   const [weatherModalOpen, setWeatherModalOpen] = useState(false)
 
   return (
@@ -271,47 +337,18 @@ export function PlansPage() {
           </div>
           <div className="plan-list">
             {plans.map((plan) => (
-              <article className="plan-card" key={plan.id}>
-                <div className="plan-summary">
-                  <div className="plan-card-top">
-                    <span className="date-chip"><Icon name="calendar" size={14} />{plan.fecha}</span>
-                    <span className={`status-badge status-${plan.estado.toLowerCase()}`}>
-                      {statusLabel(plan.estado)}
-                    </span>
-                  </div>
-                  <h3>{plan.titulo}</h3>
-                  <p className="plan-location">
-                    <Icon name="pin" size={15} />{plan.ciudad}<span aria-hidden="true">·</span>{plan.tipoActividad}
-                  </p>
-                </div>
-                <div className="card-actions">
-                  <button className="text-button" onClick={() => setViewPlan(plan)} type="button" aria-label={`Ver ${plan.titulo}`}>
-                    <Icon name="eye" size={15} /> Ver
-                  </button>
-                  <button
-                    className="text-button"
-                    onClick={() => void beginEdit(plan.id)}
-                    type="button"
-                    disabled={loadingPlanId === plan.id}
-                  >
-                    <Icon name="edit" size={15} /> {loadingPlanId === plan.id ? 'Cargando...' : 'Editar'}
-                  </button>
-                  <button
-                    className="text-button"
-                    onClick={() => void checkWeather(plan)}
-                    type="button"
-                    disabled={loadingWeatherId === plan.id}
-                  >
-                    <Icon name="cloud" size={15} /> Clima
-                  </button>
-                  <button className="text-button" onClick={() => void openShare(plan)} type="button">
-                    <Icon name="share" size={15} /> Compartir
-                  </button>
-                  <button className="text-button danger-text" onClick={() => setDeletePlan(plan)} type="button">
-                    <Icon name="trash" size={15} /> Eliminar
-                  </button>
-                </div>
-              </article>
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                loadingPlan={loadingPlanId === plan.id}
+                loadingWeather={loadingWeatherId === plan.id}
+                onView={setViewPlan}
+                onEdit={(item) => void beginEdit(item.id)}
+                onWeather={(item) => void checkWeather(item)}
+                onShare={(item) => void openShare(item)}
+                onMembers={(item) => void openMembers(item)}
+                onDelete={setDeletePlan}
+              />
             ))}
           </div>
         </section>
@@ -485,6 +522,36 @@ export function PlansPage() {
         onConfirm={() => void revokeShare()}
         onClose={() => {
           if (!shareRevoking) setConfirmShareRevocation(false)
+        }}
+      />
+
+      <PlanMembersModal
+        plan={membersPlan}
+        members={members}
+        loading={membersLoading}
+        owner={membersPlan?.ownership === 'OWNER'}
+        email={inviteEmail}
+        inviting={invitingMember}
+        error={membersError}
+        removingUserId={removingMemberId}
+        onEmailChange={setInviteEmail}
+        onInvite={() => void inviteMember()}
+        onRemove={setRemovingMember}
+        onClose={closeMembers}
+      />
+
+      <ConfirmModal
+        open={removingMember !== null}
+        title="Eliminar participante"
+        message={removingMember
+          ? `¿Quieres eliminar a ${removingMember.nombre} de este plan?`
+          : ''}
+        confirmLabel="Eliminar participante"
+        loadingLabel="Eliminando..."
+        loading={removingMemberId !== null}
+        onConfirm={() => void confirmRemoveMember()}
+        onClose={() => {
+          if (removingMemberId === null) setRemovingMember(null)
         }}
       />
     </section>

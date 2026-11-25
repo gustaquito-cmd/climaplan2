@@ -115,6 +115,24 @@ class PlanShareServiceTest {
     }
 
     @Test
+    void participanteAceptadoNoPuedeGenerarEnlacePublico() {
+        Usuario participante = new Usuario();
+        ReflectionTestUtils.setField(participante, "id", 12L);
+        when(usuarioRepository.findByEmail("member@example.com"))
+                .thenReturn(Optional.of(participante));
+        when(planRepository.findByIdAndUsuarioId(91L, 12L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                RecursoNoEncontradoException.class,
+                () -> planShareService.crearEnlace(91L, "member@example.com")
+        );
+
+        verify(planShareRepository, never()).save(any(PlanShare.class));
+        verify(planShareRepository, never()).findByPlanId(91L);
+    }
+
+    @Test
     void propietarioPuedeRevocarYElTokenDejaDeSerAccesible() {
         configurarPropietario();
         PlanShare share = activeShare("secret-token");

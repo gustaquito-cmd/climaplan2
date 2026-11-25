@@ -2,7 +2,9 @@ import api from './client'
 import type {
   Plan,
   PlanCreateInput,
+  PlanInvitation,
   PlanInput,
+  PlanMember,
   PlanShareStatus,
   PlanWeatherCheck,
   SharedPlan,
@@ -64,5 +66,32 @@ export const plansApi = {
       `/api/v1/shared/plans/${encodeURIComponent(token)}`,
     )
     return response.data
+  },
+
+  async listMembers(id: number): Promise<PlanMember[]> {
+    const response = await api.get<PlanMember[]>(`/api/v1/plans/${id}/members`)
+    return response.data
+  },
+
+  async inviteMember(id: number, email: string): Promise<PlanMember> {
+    const response = await api.post<PlanMember>(`/api/v1/plans/${id}/members`, { email })
+    return response.data
+  },
+
+  async removeMember(id: number, userId: number): Promise<void> {
+    await api.delete(`/api/v1/plans/${id}/members/${userId}`)
+  },
+
+  async listInvitations(): Promise<PlanInvitation[]> {
+    const response = await api.get<PlanInvitation[]>('/api/v1/plan-invitations')
+    return response.data
+  },
+
+  async acceptInvitation(id: number): Promise<void> {
+    await api.post(`/api/v1/plan-invitations/${id}/accept`)
+  },
+
+  async rejectInvitation(id: number): Promise<void> {
+    await api.post(`/api/v1/plan-invitations/${id}/reject`)
   },
 }

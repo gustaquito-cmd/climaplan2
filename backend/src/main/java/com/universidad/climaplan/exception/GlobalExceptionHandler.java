@@ -56,6 +56,18 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(ConflictoRecursoException.class)
+    public ResponseEntity<ApiErrorResponse> manejarConflictoRecurso(
+            ConflictoRecursoException exception,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiErrorResponse(
+                        409, "Conflict", exception.getMessage(),
+                        request.getRequestURI(), LocalDateTime.now(), null
+                ));
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiErrorResponse> manejarCredencialesInvalidas(
             AuthenticationException exception,

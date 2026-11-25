@@ -1,45 +1,91 @@
 package com.universidad.climaplan.service;
 
 import com.universidad.climaplan.dto.PlanCreateRequest;
+import com.universidad.climaplan.dto.PlanOwnership;
 import com.universidad.climaplan.dto.PlanResponse;
 import com.universidad.climaplan.dto.PlanUpdateRequest;
 import com.universidad.climaplan.entity.EstadoPlan;
 import com.universidad.climaplan.entity.Plan;
+import com.universidad.climaplan.entity.PlanMember;
+import com.universidad.climaplan.entity.PlanMemberStatus;
 import com.universidad.climaplan.entity.Usuario;
 import com.universidad.climaplan.exception.RecursoNoEncontradoException;
+import com.universidad.climaplan.repository.PlanMemberRepository;
 import com.universidad.climaplan.repository.PlanRepository;
 import com.universidad.climaplan.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
 public class PlanService {
 
     private final PlanRepository planRepository;
+    private final PlanMemberRepository planMemberRepository;
     private final UsuarioRepository usuarioRepository;
 
-    public PlanService(PlanRepository planRepository, UsuarioRepository usuarioRepository) {
+    public PlanService(
+            PlanRepository planRepository,
+            PlanMemberRepository planMemberRepository,
+            UsuarioRepository usuarioRepository
+    ) {
         this.planRepository = planRepository;
+        this.planMemberRepository = planMemberRepository;
         this.usuarioRepository = usuarioRepository;
     }
 
     @Transactional(readOnly = true)
     public List<PlanResponse> obtenerTodos(String email, boolean administrador) {
-        List<Plan> planes = administrador
-                ? planRepository.findAll()
-                : planRepository.findAllByUsuarioId(buscarUsuario(email).getId());
-        return planes.stream()
-                .map(this::convertirAResponse)
-                .toList();
+        Usuario usuario = buscarUsuario(email);
+        Map<Long, PlanResponse> resultados = new LinkedHashMap<>();
+        if (administrador) {
+            planRepository.findAll().forEach(plan -> resultados.put(
+                    plan.getId(),
+                    convertirAResponse(plan, esPropietario(plan, usuario)
+                            ? PlanOwnership.OWNER
+                            : PlanOwnership.ADMIN)
+            ));
+            return List.copyOf(resultados.values());
+        }
+
+        planRepository.findAllByUsuarioId(usuario.getId()).forEach(plan ->
+                resultados.put(plan.getId(), convertirAResponse(plan, PlanOwnership.OWNER)));
+        planMemberRepository.findAllByUsuarioIdAndStatusOrderByInvitedAtDesc(
+                        usuario.getId(),
+                        PlanMemberStatus.ACCEPTED
+                )
+                .stream()
+                .map(PlanMember::getPlan)
+                .filter(plan -> !resultados.containsKey(plan.getId()))
+                .forEach(plan -> resultados.put(
+                        plan.getId(),
+                        convertirAResponse(plan, PlanOwnership.MEMBER)
+                ));
+        return List.copyOf(resultados.values());
     }
 
     @Transactional(readOnly = true)
     public PlanResponse obtenerPorId(Long id, String email, boolean administrador) {
-        return convertirAResponse(buscarPlan(id, email, administrador));
+        Usuario usuario = buscarUsuario(email);
+        if (administrador) {
+            Plan plan = planRepository.findById(id).orElseThrow(() -> planNoEncontrado(id));
+            return convertirAResponse(
+                    plan,
+                    esPropietario(plan, usuario) ? PlanOwnership.OWNER : PlanOwnership.ADMIN
+            );
+        }
+        return planRepository.findByIdAndUsuarioId(id, usuario.getId())
+                .map(plan -> convertirAResponse(plan, PlanOwnership.OWNER))
+                .orElseGet(() -> planMemberRepository.findByPlanIdAndUsuarioId(id, usuario.getId())
+                        .filter(member -> member.getStatus() == PlanMemberStatus.ACCEPTED)
+                        .map(PlanMember::getPlan)
+                        .map(plan -> convertirAResponse(plan, PlanOwnership.MEMBER))
+                        .orElseThrow(() -> planNoEncontrado(id)));
     }
 
     public PlanResponse crear(PlanCreateRequest request, String email) {
@@ -47,30 +93,37 @@ public class PlanService {
         aplicarRequest(plan, request);
         plan.setUsuario(buscarUsuario(email));
         plan.setEstado(EstadoPlan.PENDIENTE);
-        return convertirAResponse(planRepository.save(plan));
+        return convertirAResponse(planRepository.save(plan), PlanOwnership.OWNER);
     }
 
     public PlanResponse actualizar(Long id, PlanUpdateRequest request, String email, boolean administrador) {
-        Plan plan = buscarPlan(id, email, administrador);
+        Plan plan = buscarPlanPropietario(id, email);
         aplicarRequest(plan, request);
         if (request.estado() != null) {
             plan.setEstado(request.estado());
         }
-        return convertirAResponse(planRepository.save(plan));
+        return convertirAResponse(planRepository.save(plan), PlanOwnership.OWNER);
     }
 
     public void eliminar(Long id, String email, boolean administrador) {
-        Plan plan = buscarPlan(id, email, administrador);
+        Plan plan = buscarPlanPropietario(id, email);
         planRepository.delete(plan);
     }
 
-    private Plan buscarPlan(Long id, String email, boolean administrador) {
-        return (administrador
-                ? planRepository.findById(id)
-                : planRepository.findByIdAndUsuarioId(id, buscarUsuario(email).getId()))
+    private Plan buscarPlanPropietario(Long id, String email) {
+        Usuario usuario = buscarUsuario(email);
+        return planRepository.findByIdAndUsuarioId(id, usuario.getId())
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No se encontró el plan con ID " + id
                 ));
+    }
+
+    private RecursoNoEncontradoException planNoEncontrado(Long id) {
+        return new RecursoNoEncontradoException("No se encontró el plan con ID " + id);
+    }
+
+    private boolean esPropietario(Plan plan, Usuario usuario) {
+        return plan.getUsuario() != null && plan.getUsuario().getId().equals(usuario.getId());
     }
 
     private Usuario buscarUsuario(String email) {
@@ -105,7 +158,7 @@ public class PlanService {
         plan.setNotas(notas);
     }
 
-    private PlanResponse convertirAResponse(Plan plan) {
+    private PlanResponse convertirAResponse(Plan plan, PlanOwnership ownership) {
         return new PlanResponse(
                 plan.getId(),
                 plan.getTitulo(),
@@ -115,7 +168,8 @@ public class PlanService {
                 plan.getNotas(),
                 plan.getEstado(),
                 plan.getUsuario() == null ? null : plan.getUsuario().getId(),
-                plan.getUsuario() == null ? null : plan.getUsuario().getNombre()
+                plan.getUsuario() == null ? null : plan.getUsuario().getNombre(),
+                ownership
         );
     }
 }

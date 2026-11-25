@@ -13,8 +13,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.OneToMany;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "plans")
@@ -45,6 +48,9 @@ public class Plan {
 
     @OneToOne(mappedBy = "plan", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     private PlanShare planShare;
+
+    @OneToMany(mappedBy = "plan", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<PlanMember> members = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -111,5 +117,9 @@ public class Plan {
 
     public void setEstado(EstadoPlan estado) {
         this.estado = estado;
+    }
+
+    public List<PlanMember> getMembers() {
+        return members;
     }
 }

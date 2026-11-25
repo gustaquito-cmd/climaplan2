@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { getApiErrorMessage } from '../api/errors'
 import { favoritesApi } from '../api/favorites'
 import { plansApi } from '../api/plans'
 import { ErrorMessage, LoadingState } from '../components/Feedback'
 import { Icon, type IconName } from '../components/Icon'
+import { PlanInvitations } from '../components/PlanInvitations'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import type { PlanInvitation } from '../types'
 
 const shortcuts: {
   to: string
@@ -44,12 +47,28 @@ export function DashboardPage() {
   const [planCount, setPlanCount] = useState<number | null>(null)
   const [favoriteCount, setFavoriteCount] = useState<number | null>(null)
   const [countError, setCountError] = useState('')
+  const [invitations, setInvitations] = useState<PlanInvitation[]>([])
+  const [invitationsLoading, setInvitationsLoading] = useState(true)
+  const [invitationsError, setInvitationsError] = useState('')
+  const [invitationActionId, setInvitationActionId] = useState<number | null>(null)
   const handledAdminAccessDenied = useRef(false)
   const adminAccessDenied =
     typeof location.state === 'object' &&
     location.state !== null &&
     'adminAccessDenied' in location.state &&
     location.state.adminAccessDenied === true
+
+  const loadInvitations = useCallback(async () => {
+    setInvitationsLoading(true)
+    setInvitationsError('')
+    try {
+      setInvitations(await plansApi.listInvitations())
+    } catch (requestError) {
+      setInvitationsError(getApiErrorMessage(requestError))
+    } finally {
+      setInvitationsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!adminAccessDenied || handledAdminAccessDenied.current) return
@@ -73,6 +92,36 @@ export function DashboardPage() {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    void loadInvitations()
+  }, [loadInvitations])
+
+  async function resolveInvitation(invitation: PlanInvitation, accept: boolean) {
+    setInvitationActionId(invitation.id)
+    setInvitationsError('')
+    try {
+      if (accept) {
+        await plansApi.acceptInvitation(invitation.id)
+        showToast('Invitación aceptada. El plan ya está en Mis planes.')
+        try {
+          const plans = await plansApi.list()
+          setPlanCount(plans.length)
+          setCountError('')
+        } catch {
+          setCountError('Invitación aceptada, pero no se pudo actualizar el contador de planes.')
+        }
+      } else {
+        await plansApi.rejectInvitation(invitation.id)
+        showToast('Invitación rechazada.')
+      }
+      await loadInvitations()
+    } catch (requestError) {
+      setInvitationsError(getApiErrorMessage(requestError))
+    } finally {
+      setInvitationActionId(null)
+    }
+  }
 
   if (loading) return <LoadingState label="Cargando tu perfil..." />
   if (profileError) {
@@ -119,6 +168,16 @@ export function DashboardPage() {
           )
         })}
       </div>
+
+      <PlanInvitations
+        invitations={invitations}
+        loading={invitationsLoading}
+        error={invitationsError}
+        actionId={invitationActionId}
+        onRefresh={() => void loadInvitations()}
+        onAccept={(invitation) => void resolveInvitation(invitation, true)}
+        onReject={(invitation) => void resolveInvitation(invitation, false)}
+      />
     </section>
   )
 }

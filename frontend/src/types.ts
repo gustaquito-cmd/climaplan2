@@ -1,5 +1,7 @@
 export type Role = 'ROLE_USER' | 'ROLE_ADMIN'
 export type PlanStatus = 'PENDIENTE' | 'COMPLETADO' | 'CANCELADO'
+export type PlanOwnership = 'OWNER' | 'MEMBER' | 'ADMIN'
+export type PlanMemberStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED'
 export type WeatherDataType =
   | 'CURRENT'
   | 'FORECAST'
@@ -46,6 +48,24 @@ export interface Plan extends PlanInput {
   id: number
   usuarioId: number
   nombreUsuario: string
+  ownership: PlanOwnership
+}
+
+export interface PlanMember {
+  id: number
+  nombre: string
+  email: string
+  estado: PlanMemberStatus
+  rol: Exclude<PlanOwnership, 'ADMIN'>
+}
+
+export interface PlanInvitation {
+  id: number
+  planId: number
+  tituloPlan: string
+  ciudad: string
+  propietarioNombre: string
+  invitedAt: string
 }
 
 export interface PlanShareStatus {
