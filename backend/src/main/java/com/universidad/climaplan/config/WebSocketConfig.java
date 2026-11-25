@@ -5,6 +5,7 @@ import com.universidad.climaplan.security.PlanChatChannelInterceptor;
 import com.universidad.climaplan.service.PlanService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
@@ -28,7 +29,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             JwtService jwtService,
             UserDetailsService userDetailsService,
             PlanService planService,
-            SimpUserRegistry userRegistry
+            @Lazy SimpUserRegistry userRegistry
     ) {
         this.allowedOrigins = allowedOrigins;
         this.inboundInterceptor =
