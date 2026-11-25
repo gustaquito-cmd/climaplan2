@@ -52,6 +52,8 @@ npm run dev
 
 El frontend lee `VITE_API_BASE_URL` desde el entorno. `.env.example` apunta al backend local. Para otro backend, configura esa variable en el entorno de Vite; no pongas claves ni contraseñas en el cliente.
 
+Para desplegar en Vercel, selecciona `frontend` como directorio raíz y configura `VITE_API_BASE_URL` con el origen HTTPS del backend antes del build. `frontend/vercel.json` permite acceder directamente a las rutas de React Router. Agrega el origen de Vercel a `CORS_ALLOWED_ORIGINS` en el backend.
+
 Para probar localmente contra Railway mientras el backend desplegado no permita CORS, puedes configurar `VITE_API_BASE_URL=/` y `VITE_API_PROXY_TARGET=https://climaplan2-production.up.railway.app`; el proxy de Vite es solo de desarrollo.
 
 El backend local permite por defecto el origen de Vite `http://localhost:5173`. En el backend desplegado, configura `CORS_ALLOWED_ORIGINS` con los orígenes frontend exactos separados por comas, por ejemplo `http://localhost:5173,https://tu-frontend.example.com`. No uses comodines con credenciales.
