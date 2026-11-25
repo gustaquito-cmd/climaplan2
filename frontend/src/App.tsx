@@ -8,6 +8,7 @@ import { FavoritesPage } from './pages/FavoritesPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PlansPage } from './pages/PlansPage'
+import { PlanChatPage } from './pages/PlanChatPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { SharedPlanPage } from './pages/SharedPlanPage'
 import { WeatherPage } from './pages/WeatherPage'
@@ -29,6 +30,7 @@ function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/plans" element={<PlansPage />} />
+        <Route path="/plans/:planId/chat" element={<PlanChatPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/weather" element={<WeatherPage />} />
         <Route element={<AdminRoute />}>

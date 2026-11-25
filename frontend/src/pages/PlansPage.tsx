@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getApiErrorMessage } from '../api/errors'
 import { plansApi } from '../api/plans'
 import { ConfirmModal } from '../components/ConfirmModal'
@@ -35,6 +36,7 @@ function statusLabel(status: Plan['estado']) {
 
 export function PlansPage() {
   const { showToast } = useToast()
+  const navigate = useNavigate()
   const [plans, setPlans] = useState<Plan[]>([])
   const [form, setForm] = useState<PlanInput>(emptyPlan)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -347,6 +349,7 @@ export function PlansPage() {
                 onWeather={(item) => void checkWeather(item)}
                 onShare={(item) => void openShare(item)}
                 onMembers={(item) => void openMembers(item)}
+                onChat={(item) => navigate(`/plans/${item.id}/chat`)}
                 onDelete={setDeletePlan}
               />
             ))}

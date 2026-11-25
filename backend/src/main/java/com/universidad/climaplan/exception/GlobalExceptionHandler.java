@@ -2,6 +2,7 @@ package com.universidad.climaplan.exception;
 
 import com.universidad.climaplan.dto.error.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
@@ -29,6 +30,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(new ApiErrorResponse(
                 400, "Bad Request", "La solicitud contiene campos inválidos",
                 request.getRequestURI(), LocalDateTime.now(), errores
+        ));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiErrorResponse> manejarViolacionesDeParametros(
+            ConstraintViolationException exception,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.badRequest().body(new ApiErrorResponse(
+                400,
+                "Bad Request",
+                "La solicitud contiene parámetros inválidos",
+                request.getRequestURI(),
+                LocalDateTime.now(),
+                null
         ));
     }
 

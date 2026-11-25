@@ -46,6 +46,9 @@ class PlanMemberServiceTest {
     @Mock
     private UsuarioRepository usuarioRepository;
 
+    @Mock
+    private PlanService planService;
+
     @InjectMocks
     private PlanMemberService planMemberService;
 
@@ -229,13 +232,9 @@ class PlanMemberServiceTest {
     @Test
     void participanteAceptadoPuedeListarParticipantesPeroPendingNo() {
         PlanMember accepted = miembro(invited, PlanMemberStatus.ACCEPTED);
-        when(usuarioRepository.findByEmail(invited.getEmail())).thenReturn(Optional.of(invited));
-        when(planRepository.findById(91L)).thenReturn(Optional.of(plan));
-        when(planMemberRepository.existsByPlanIdAndUsuarioIdAndStatus(
-                91L,
-                9L,
-                PlanMemberStatus.ACCEPTED
-        )).thenReturn(true, false);
+        when(planService.obtenerPlanLegible(91L, invited.getEmail()))
+                .thenReturn(plan)
+                .thenThrow(new RecursoNoEncontradoException("No se encontró el plan"));
         when(planMemberRepository.findAllByPlanIdOrderByInvitedAtAsc(91L)).thenReturn(List.of(accepted));
 
         var members = planMemberService.listarParticipantes(91L, invited.getEmail());

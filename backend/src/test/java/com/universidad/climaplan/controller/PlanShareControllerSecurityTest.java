@@ -110,6 +110,7 @@ class PlanShareControllerSecurityTest {
                 .andExpect(jsonPath("$.titulo").value("Caminata"))
                 .andExpect(jsonPath("$.weatherDataType").value("FORECAST"))
                 .andExpect(jsonPath("$.clima.temperatura").value(25))
+                .andExpect(jsonPath("$.messages").doesNotExist())
                 .andExpect(jsonPath("$.usuarioId").doesNotExist())
                 .andExpect(jsonPath("$.email").doesNotExist())
                 .andExpect(jsonPath("$.rol").doesNotExist())

@@ -25,6 +25,12 @@ Los enlaces públicos usan un token generado a partir de 32 bytes de `SecureRand
 
 La entidad `PlanShare` añade la tabla `plan_shares`. `spring.jpa.hibernate.ddl-auto=update` crea/actualiza esta tabla al iniciar el backend; no se requiere una migración manual para este cambio.
 
+### Chat privado por plan
+
+El chat está disponible en `/plans/{planId}/chat` para el propietario y los participantes con invitación aceptada. El historial usa `GET /api/v1/plans/{planId}/messages` y los mensajes nuevos se envían por STOMP a `/app/plans/{planId}/chat`, con difusión en `/topic/plans/{planId}/chat`. El cliente STOMP envía el JWT existente en el encabezado `Authorization` del frame `CONNECT`; el token no se incluye en la URL.
+
+Configura `VITE_API_BASE_URL` con el origen del backend para que el cliente conecte a `/ws` en ese mismo origen. El proxy de desarrollo actual solo proxya `/api/v1`, no WebSocket; por eso, con `VITE_API_BASE_URL=/`, la ruta `/ws` del frontend no se reenviará al backend local. No se modificó esa configuración como parte del chat. El endpoint público de planes compartidos no expone el historial ni tiene acceso al chat.
+
 ## Frontend
 
 ```powershell

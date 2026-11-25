@@ -71,20 +71,29 @@ public class PlanService {
 
     @Transactional(readOnly = true)
     public PlanResponse obtenerPorId(Long id, String email, boolean administrador) {
-        Usuario usuario = buscarUsuario(email);
         if (administrador) {
+            Usuario usuario = buscarUsuario(email);
             Plan plan = planRepository.findById(id).orElseThrow(() -> planNoEncontrado(id));
             return convertirAResponse(
                     plan,
                     esPropietario(plan, usuario) ? PlanOwnership.OWNER : PlanOwnership.ADMIN
             );
         }
+        Plan plan = obtenerPlanLegible(id, email);
+        PlanOwnership ownership = plan.getUsuario() != null
+                && email.equals(plan.getUsuario().getEmail())
+                ? PlanOwnership.OWNER
+                : PlanOwnership.MEMBER;
+        return convertirAResponse(plan, ownership);
+    }
+
+    @Transactional(readOnly = true)
+    public Plan obtenerPlanLegible(Long id, String email) {
+        Usuario usuario = buscarUsuario(email);
         return planRepository.findByIdAndUsuarioId(id, usuario.getId())
-                .map(plan -> convertirAResponse(plan, PlanOwnership.OWNER))
                 .orElseGet(() -> planMemberRepository.findByPlanIdAndUsuarioId(id, usuario.getId())
                         .filter(member -> member.getStatus() == PlanMemberStatus.ACCEPTED)
                         .map(PlanMember::getPlan)
-                        .map(plan -> convertirAResponse(plan, PlanOwnership.MEMBER))
                         .orElseThrow(() -> planNoEncontrado(id)));
     }
 

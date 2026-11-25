@@ -52,6 +52,9 @@ public class Plan {
     @OneToMany(mappedBy = "plan", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<PlanMember> members = new ArrayList<>();
 
+    @OneToMany(mappedBy = "plan", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<PlanMessage> messages = new ArrayList<>();
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoPlan estado;
@@ -121,5 +124,9 @@ public class Plan {
 
     public List<PlanMember> getMembers() {
         return members;
+    }
+
+    public List<PlanMessage> getMessages() {
+        return messages;
     }
 }

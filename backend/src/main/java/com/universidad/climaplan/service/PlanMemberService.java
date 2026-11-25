@@ -27,15 +27,18 @@ public class PlanMemberService {
     private final PlanRepository planRepository;
     private final PlanMemberRepository planMemberRepository;
     private final UsuarioRepository usuarioRepository;
+    private final PlanService planService;
 
     public PlanMemberService(
             PlanRepository planRepository,
             PlanMemberRepository planMemberRepository,
-            UsuarioRepository usuarioRepository
+            UsuarioRepository usuarioRepository,
+            PlanService planService
     ) {
         this.planRepository = planRepository;
         this.planMemberRepository = planMemberRepository;
         this.usuarioRepository = usuarioRepository;
+        this.planService = planService;
     }
 
     public PlanMemberResponse invitar(
@@ -68,8 +71,7 @@ public class PlanMemberService {
 
     @Transactional(readOnly = true)
     public List<PlanMemberResponse> listarParticipantes(Long planId, String email) {
-        Usuario actor = buscarUsuario(email);
-        Plan plan = buscarPlanLegible(planId, actor);
+        Plan plan = planService.obtenerPlanLegible(planId, email);
         List<PlanMemberResponse> participantes = new ArrayList<>();
         Usuario propietario = plan.getUsuario();
         if (propietario != null) {
@@ -149,22 +151,6 @@ public class PlanMemberService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No se encontró el plan"
                 ));
-    }
-
-    private Plan buscarPlanLegible(Long planId, Usuario actor) {
-        Plan plan = planRepository.findById(planId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró el plan"));
-        boolean propietario = plan.getUsuario() != null
-                && plan.getUsuario().getId().equals(actor.getId());
-        boolean participante = planMemberRepository.existsByPlanIdAndUsuarioIdAndStatus(
-                planId,
-                actor.getId(),
-                PlanMemberStatus.ACCEPTED
-        );
-        if (!propietario && !participante) {
-            throw new RecursoNoEncontradoException("No se encontró el plan");
-        }
-        return plan;
     }
 
     private Usuario buscarUsuario(String email) {

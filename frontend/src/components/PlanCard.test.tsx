@@ -24,6 +24,7 @@ const callbacks = {
   onWeather: () => {},
   onShare: () => {},
   onMembers: () => {},
+  onChat: () => {},
   onDelete: () => {},
 }
 
@@ -35,6 +36,7 @@ describe('PlanCard', () => {
     expect(markup).toContain('Editar')
     expect(markup).toContain('Clima')
     expect(markup).toContain('Participantes')
+    expect(markup).toContain('Chat')
     expect(markup).toContain('Compartir')
     expect(markup).toContain('Eliminar')
   })
@@ -48,6 +50,7 @@ describe('PlanCard', () => {
     expect(markup).toContain('Ver')
     expect(markup).toContain('Clima')
     expect(markup).toContain('Participantes')
+    expect(markup).toContain('Chat')
     expect(markup).not.toContain('Editar')
     expect(markup).not.toContain('Compartir')
     expect(markup).not.toContain('Eliminar')

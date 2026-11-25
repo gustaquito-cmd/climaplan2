@@ -10,6 +10,7 @@ interface PlanCardProps {
   onWeather: (plan: Plan) => void
   onShare: (plan: Plan) => void
   onMembers: (plan: Plan) => void
+  onChat: (plan: Plan) => void
   onDelete: (plan: Plan) => void
 }
 
@@ -26,6 +27,7 @@ export function PlanCard({
   onWeather,
   onShare,
   onMembers,
+  onChat,
   onDelete,
 }: PlanCardProps) {
   const owner = plan.ownership === 'OWNER'
@@ -71,9 +73,14 @@ export function PlanCard({
           <Icon name="cloud" size={15} /> Clima
         </button>
         {(owner || member) && (
-          <button className="text-button" onClick={() => onMembers(plan)} type="button">
-            <Icon name="users" size={15} /> Participantes
-          </button>
+          <>
+            <button className="text-button" onClick={() => onMembers(plan)} type="button">
+              <Icon name="users" size={15} /> Participantes
+            </button>
+            <button className="text-button" onClick={() => onChat(plan)} type="button">
+              <Icon name="chat" size={15} /> Chat
+            </button>
+          </>
         )}
         {owner && (
           <>
