@@ -1,6 +1,7 @@
 package com.universidad.climaplan.dto;
 
 import com.universidad.climaplan.dto.weather.EstadoClimatico;
+import com.universidad.climaplan.dto.weather.WeatherDataType;
 import com.universidad.climaplan.entity.EstadoPlan;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -18,13 +19,15 @@ public record SharedPlanResponse(
         String tipoActividad,
         @Schema(description = "Estado del plan")
         EstadoPlan estado,
-        @Schema(description = "Estado climático actual")
+        @Schema(description = "Tipo de datos meteorológicos disponibles")
+        WeatherDataType weatherDataType,
+        @Schema(description = "Estado climático asociado a los datos disponibles")
         EstadoClimatico estadoClimatico,
-        @Schema(description = "Información meteorológica actual")
+        @Schema(description = "Información meteorológica; vacío cuando no hay datos para la fecha")
         SharedWeatherResponse clima,
         @Schema(description = "Recomendación meteorológica")
         String recomendacion,
-        @Schema(description = "Aviso cuando la evaluación climática no está disponible")
+        @Schema(description = "Aviso cuando no hay datos meteorológicos o el proveedor no responde")
         String avisoClimatico
 ) {
 }

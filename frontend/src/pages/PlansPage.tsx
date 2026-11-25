@@ -6,9 +6,12 @@ import { EmptyState, ErrorMessage, LoadingState } from '../components/Feedback'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { PageHeader } from '../components/PageHeader'
+import { PlanStatusField } from '../components/PlanStatusField'
+import { WeatherResult } from '../components/WeatherResult'
 import { useToast } from '../context/ToastContext'
 import type {
   Plan,
+  PlanCreateInput,
   PlanInput,
   PlanShareStatus,
   PlanWeatherCheck,
@@ -22,10 +25,6 @@ const emptyPlan = (): PlanInput => ({
   notas: '',
   estado: 'PENDIENTE',
 })
-
-function isPlanStatus(value: string): value is PlanInput['estado'] {
-  return value === 'PENDIENTE' || value === 'COMPLETADO' || value === 'CANCELADO'
-}
 
 function statusLabel(status: Plan['estado']) {
   return status.charAt(0) + status.slice(1).toLowerCase()
@@ -96,7 +95,14 @@ export function PlansPage() {
     try {
       const updating = editingId !== null
       if (editingId === null) {
-        await plansApi.create(form)
+        const createInput: PlanCreateInput = {
+          titulo: form.titulo,
+          ciudad: form.ciudad,
+          fecha: form.fecha,
+          tipoActividad: form.tipoActividad,
+          notas: form.notas,
+        }
+        await plansApi.create(createInput)
       } else {
         await plansApi.update(editingId, form)
       }
@@ -360,19 +366,11 @@ export function PlansPage() {
             Notas <span className="optional-label">opcional</span>
             <textarea rows={3} value={form.notas} onChange={(event) => updateField('notas', event.target.value)} />
           </label>
-          <label>
-            Estado
-            <select
-              value={form.estado}
-              onChange={(event) => {
-                if (isPlanStatus(event.target.value)) updateField('estado', event.target.value)
-              }}
-            >
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="COMPLETADO">Completado</option>
-              <option value="CANCELADO">Cancelado</option>
-            </select>
-          </label>
+          <PlanStatusField
+            editing={editingId !== null}
+            value={form.estado}
+            onChange={(value) => updateField('estado', value)}
+          />
         </form>
       </Modal>
 
@@ -399,24 +397,15 @@ export function PlansPage() {
         ) : weatherError ? (
           <ErrorMessage message={weatherError} />
         ) : weatherCheck ? (
-          <div className="weather-check-detail">
-            <div className="weather-check-top">
-              <div>
-                <span className="muted">{weatherCheck.fecha}</span>
-                <h3>{weatherCheck.ciudad}</h3>
-              </div>
-              <span className={`weather-status weather-${weatherCheck.estadoClimatico.toLowerCase()}`}>
-                {weatherCheck.estadoClimatico.replaceAll('_', ' ').toLowerCase()}
-              </span>
-            </div>
-            <p className="weather-description">{weatherCheck.clima.descripcion}</p>
-            <div className="weather-metrics">
-              <div><span>Temperatura</span><strong>{weatherCheck.clima.temperatura}°C</strong></div>
-              <div><span>Humedad</span><strong>{weatherCheck.clima.humedad}%</strong></div>
-              <div><span>Viento</span><strong>{weatherCheck.clima.velocidadViento} m/s</strong></div>
-            </div>
-            <div className="recommendation"><strong>Recomendación</strong><p>{weatherCheck.recomendacion}</p></div>
-          </div>
+          <WeatherResult
+            weatherDataType={weatherCheck.weatherDataType}
+            fecha={weatherCheck.fecha}
+            ciudad={weatherCheck.ciudad}
+            estadoClimatico={weatherCheck.estadoClimatico}
+            clima={weatherCheck.clima}
+            recomendacion={weatherCheck.recomendacion}
+            mensaje={weatherCheck.mensaje}
+          />
         ) : null}
       </Modal>
 

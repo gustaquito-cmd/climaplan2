@@ -1,7 +1,8 @@
 package com.universidad.climaplan.controller;
 
-import com.universidad.climaplan.dto.PlanRequest;
+import com.universidad.climaplan.dto.PlanCreateRequest;
 import com.universidad.climaplan.dto.PlanResponse;
+import com.universidad.climaplan.dto.PlanUpdateRequest;
 import com.universidad.climaplan.dto.weather.PlanWeatherCheckResponse;
 import com.universidad.climaplan.service.PlanService;
 import com.universidad.climaplan.service.weather.PlanWeatherService;
@@ -111,7 +112,7 @@ public class PlanController {
                             examples = @ExampleObject(name = "Internal Server Error", value = "{\"status\":500,\"error\":\"Internal Server Error\",\"message\":\"Ocurrió un error interno en el servidor\",\"path\":\"/api/v1/plans\",\"timestamp\":\"2026-11-20T12:00:00\",\"validationErrors\":null}")))
     })
     public ResponseEntity<PlanResponse> crear(
-            @Valid @RequestBody PlanRequest request,
+            @Valid @RequestBody PlanCreateRequest request,
             Authentication authentication
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -142,7 +143,7 @@ public class PlanController {
     })
     public ResponseEntity<PlanResponse> actualizar(
             @PathVariable Long id,
-            @Valid @RequestBody PlanRequest request,
+            @Valid @RequestBody PlanUpdateRequest request,
             Authentication authentication
     ) {
         return ResponseEntity.ok(planService.actualizar(

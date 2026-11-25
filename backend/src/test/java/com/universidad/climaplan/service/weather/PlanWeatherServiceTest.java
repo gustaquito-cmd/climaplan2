@@ -1,85 +1,181 @@
 package com.universidad.climaplan.service.weather;
 
-import com.universidad.climaplan.dto.weather.EstadoClimatico;
 import com.universidad.climaplan.dto.PlanResponse;
+import com.universidad.climaplan.dto.weather.EstadoClimatico;
+import com.universidad.climaplan.dto.weather.WeatherDataType;
 import com.universidad.climaplan.dto.weather.WeatherResponse;
+import com.universidad.climaplan.entity.EstadoPlan;
+import com.universidad.climaplan.entity.Plan;
 import com.universidad.climaplan.service.PlanService;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class PlanWeatherServiceTest {
 
-    private final PlanWeatherService service =
-            new PlanWeatherService(mock(PlanService.class), mock(OpenWeatherService.class));
-
     @Test
-    void condicionesIdealesSonFavorables() {
-        assertEquals(EstadoClimatico.FAVORABLE, evaluar(25, 50, 3, 800, "Clear"));
+    void planParaHoyConsultaClimaActual() {
+        PlanService planService = mock(PlanService.class);
+        OpenWeatherService openWeatherService = mock(OpenWeatherService.class);
+        PlanWeatherService service = new PlanWeatherService(planService, openWeatherService);
+        PlanResponse plan = plan(LocalDate.now());
+        WeatherResponse weather = weather(25, 50, 3, "cielo claro");
+        when(planService.obtenerPorId(7L, "usuario@example.com", false)).thenReturn(plan);
+        when(openWeatherService.consultarClimaDetallado(plan.ciudad()))
+                .thenReturn(new CondicionesMeteorologicas(weather, 800, "Clear"));
+
+        var response = service.verificarPlan(7L, "usuario@example.com", false);
+
+        assertEquals(WeatherDataType.CURRENT, response.weatherDataType());
+        assertEquals(weather, response.clima());
+        assertEquals(EstadoClimatico.FAVORABLE, response.estadoClimatico());
+        assertEquals("Clima actual", response.mensaje());
+        verify(openWeatherService).consultarClimaDetallado(plan.ciudad());
+        verify(openWeatherService, never()).consultarPronostico(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.any()
+        );
     }
 
     @Test
-    void humedadAltaOlluviaLigeraRequierenPrecaucion() {
-        assertEquals(EstadoClimatico.PRECAUCION, evaluar(25, 85, 3, 800, "Clear"));
-        assertEquals(EstadoClimatico.PRECAUCION, evaluar(25, 50, 3, 500, "Rain"));
+    void planFuturoUsaPronosticoYConservaEvaluacion() {
+        PlanService planService = mock(PlanService.class);
+        OpenWeatherService openWeatherService = mock(OpenWeatherService.class);
+        PlanWeatherService service = new PlanWeatherService(planService, openWeatherService);
+        LocalDate fecha = LocalDate.now().plusDays(3);
+        PlanResponse plan = plan(fecha);
+        WeatherResponse weather = weather(25, 50, 3, "cielo despejado");
+        when(planService.obtenerPorId(7L, "usuario@example.com", false)).thenReturn(plan);
+        when(openWeatherService.consultarPronostico(plan.ciudad(), fecha))
+                .thenReturn(Optional.of(new CondicionesMeteorologicas(weather, 800, "Clear")));
+
+        var response = service.verificarPlan(7L, "usuario@example.com", false);
+
+        assertEquals(WeatherDataType.FORECAST, response.weatherDataType());
+        assertEquals(weather, response.clima());
+        assertEquals(EstadoClimatico.FAVORABLE, response.estadoClimatico());
+        assertEquals("Las condiciones pronosticadas son favorables para la actividad.",
+                response.recomendacion());
+        assertEquals("Pronóstico para " + fecha, response.mensaje());
+        verify(openWeatherService, never()).consultarClimaDetallado(plan.ciudad());
     }
 
     @Test
-    void lluviaFuerteTemperaturaExtremaOVientoFuerteNoSonRecomendables() {
-        assertEquals(EstadoClimatico.NO_RECOMENDABLE, evaluar(25, 50, 3, 502, "Rain"));
-        assertEquals(EstadoClimatico.NO_RECOMENDABLE, evaluar(9.9, 50, 3, 800, "Clear"));
-        assertEquals(EstadoClimatico.NO_RECOMENDABLE, evaluar(25, 50, 12, 800, "Clear"));
+    void futuroSinEntradaParaLaFechaNoFingeClimaActual() {
+        PlanService planService = mock(PlanService.class);
+        OpenWeatherService openWeatherService = mock(OpenWeatherService.class);
+        PlanWeatherService service = new PlanWeatherService(planService, openWeatherService);
+        LocalDate fecha = LocalDate.now().plusDays(12);
+        PlanResponse plan = plan(fecha);
+        when(planService.obtenerPorId(7L, "usuario@example.com", false)).thenReturn(plan);
+        when(openWeatherService.consultarPronostico(plan.ciudad(), fecha)).thenReturn(Optional.empty());
+
+        var response = service.verificarPlan(7L, "usuario@example.com", false);
+
+        assertEquals(WeatherDataType.NOT_AVAILABLE, response.weatherDataType());
+        assertNull(response.clima());
+        assertNull(response.estadoClimatico());
+        assertEquals(
+                "El pronóstico todavía no está disponible para esta fecha. "
+                        + "Intenta nuevamente cuando falten 5 días o menos.",
+                response.mensaje()
+        );
+        verify(openWeatherService, never()).consultarClimaDetallado(plan.ciudad());
+    }
+
+    @Test
+    void planPasadoNoConsultaOpenWeather() {
+        PlanService planService = mock(PlanService.class);
+        OpenWeatherService openWeatherService = mock(OpenWeatherService.class);
+        PlanWeatherService service = new PlanWeatherService(planService, openWeatherService);
+        PlanResponse plan = plan(LocalDate.now().minusDays(1));
+        when(planService.obtenerPorId(7L, "usuario@example.com", false)).thenReturn(plan);
+
+        var response = service.verificarPlan(7L, "usuario@example.com", false);
+
+        assertEquals(WeatherDataType.PAST_DATE, response.weatherDataType());
+        assertNull(response.clima());
+        assertEquals("La fecha de este plan ya pasó.", response.mensaje());
+        verify(openWeatherService, never()).consultarClimaDetallado(plan.ciudad());
+        verify(openWeatherService, never()).consultarPronostico(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.any()
+        );
+    }
+
+    @Test
+    void planCompartidoUsaLaMismaDecisionDePronostico() {
+        OpenWeatherService openWeatherService = mock(OpenWeatherService.class);
+        PlanWeatherService service = new PlanWeatherService(mock(PlanService.class), openWeatherService);
+        Plan plan = new Plan();
+        plan.setTitulo("Caminata");
+        plan.setCiudad("Tuxtla Gutiérrez");
+        plan.setFecha(LocalDate.now().plusDays(3));
+        plan.setTipoActividad("Senderismo");
+        plan.setEstado(EstadoPlan.PENDIENTE);
+        when(openWeatherService.consultarPronostico(plan.getCiudad(), plan.getFecha()))
+                .thenReturn(Optional.of(new CondicionesMeteorologicas(
+                        weather(25, 50, 3, "cielo claro"),
+                        800,
+                        "Clear"
+                )));
+
+        var response = service.verificarPlanCompartido(plan);
+
+        assertEquals(WeatherDataType.FORECAST, response.weatherDataType());
+        assertEquals("cielo claro", response.clima().descripcion());
+        verify(openWeatherService, never()).consultarClimaDetallado(plan.getCiudad());
     }
 
     @Test
     void aplicaLosLimitesDeTemperaturaYClasificaPorCodigoMeteorologico() {
-        assertEquals(EstadoClimatico.FAVORABLE, evaluar(18, 50, 3, 800, "No importa"));
-        assertEquals(EstadoClimatico.FAVORABLE, evaluar(32, 50, 3, 800, "No importa"));
-        assertEquals(EstadoClimatico.PRECAUCION, evaluar(10, 50, 3, 800, "Clear"));
-        assertEquals(EstadoClimatico.PRECAUCION, evaluar(36, 50, 3, 800, "Clear"));
-        assertEquals(EstadoClimatico.NO_RECOMENDABLE, evaluar(36.1, 50, 3, 800, "Clear"));
-        assertEquals(EstadoClimatico.NO_RECOMENDABLE, evaluar(25, 50, 3, 202, "No importa"));
-        assertEquals(EstadoClimatico.NO_RECOMENDABLE, evaluar(25, 50, 3, 601, "No importa"));
+        PlanWeatherService service = new PlanWeatherService(
+                mock(PlanService.class),
+                mock(OpenWeatherService.class)
+        );
+
+        assertEquals(EstadoClimatico.FAVORABLE, evaluar(service, 18, 50, 3, 800));
+        assertEquals(EstadoClimatico.FAVORABLE, evaluar(service, 32, 50, 3, 800));
+        assertEquals(EstadoClimatico.PRECAUCION, evaluar(service, 10, 50, 3, 800));
+        assertEquals(EstadoClimatico.PRECAUCION, evaluar(service, 36, 50, 3, 800));
+        assertEquals(EstadoClimatico.PRECAUCION, evaluar(service, 25, 85, 3, 800));
+        assertEquals(EstadoClimatico.PRECAUCION, evaluar(service, 25, 50, 3, 500));
+        assertEquals(EstadoClimatico.NO_RECOMENDABLE, evaluar(service, 9.9, 50, 3, 800));
+        assertEquals(EstadoClimatico.NO_RECOMENDABLE, evaluar(service, 36.1, 50, 3, 800));
+        assertEquals(EstadoClimatico.NO_RECOMENDABLE, evaluar(service, 25, 50, 12, 800));
+        assertEquals(EstadoClimatico.NO_RECOMENDABLE, evaluar(service, 25, 50, 3, 202));
+        assertEquals(EstadoClimatico.NO_RECOMENDABLE, evaluar(service, 25, 50, 3, 601));
     }
 
-    @Test
-    void respuestaDePlanIncluyeElClimaActualAnidado() {
-        PlanService planService = mock(PlanService.class);
-        OpenWeatherService openWeatherService = mock(OpenWeatherService.class);
-        PlanWeatherService planWeatherService = new PlanWeatherService(planService, openWeatherService);
-        PlanResponse plan = new PlanResponse(
-                7L, "Caminata", "Tuxtla Gutiérrez", LocalDate.of(2026, 11, 8),
-                "EXTERIOR", null, null, 2L, "Usuario"
+    private static PlanResponse plan(LocalDate fecha) {
+        return new PlanResponse(
+                7L,
+                "Caminata",
+                "Tuxtla Gutiérrez",
+                fecha,
+                "EXTERIOR",
+                null,
+                EstadoPlan.PENDIENTE,
+                2L,
+                "Usuario"
         );
-        WeatherResponse weather = new WeatherResponse(
-                "Tuxtla Gutiérrez", "MX", 16.75, -93.12, 25, 25, 50,
-                "cielo claro", 3
-        );
-        when(planService.obtenerPorId(7L, "usuario@example.com", false)).thenReturn(plan);
-        when(openWeatherService.consultarClimaDetallado(plan.ciudad()))
-                .thenReturn(new ClimaActual(weather, 800, "Clear"));
-
-        var response = planWeatherService.verificarPlan(7L, "usuario@example.com", false);
-
-        assertEquals(7L, response.planId());
-        assertEquals("Caminata", response.titulo());
-        assertEquals(plan.fecha(), response.fecha());
-        assertEquals(weather, response.clima());
-        assertEquals(EstadoClimatico.FAVORABLE, response.estadoClimatico());
     }
 
-    private EstadoClimatico evaluar(
+    private static WeatherResponse weather(
             double temperatura,
             int humedad,
             double viento,
-            int codigo,
-            String grupo
+            String descripcion
     ) {
-        WeatherResponse response = new WeatherResponse(
+        return new WeatherResponse(
                 "Tuxtla Gutiérrez",
                 "MX",
                 16.75,
@@ -87,9 +183,22 @@ class PlanWeatherServiceTest {
                 temperatura,
                 temperatura,
                 humedad,
-                "despejado",
+                descripcion,
                 viento
         );
-        return service.evaluar(new ClimaActual(response, codigo, grupo));
+    }
+
+    private static EstadoClimatico evaluar(
+            PlanWeatherService service,
+            double temperatura,
+            int humedad,
+            double viento,
+            int codigo
+    ) {
+        return service.evaluar(new CondicionesMeteorologicas(
+                weather(temperatura, humedad, viento, "despejado"),
+                codigo,
+                "Clear"
+        ));
     }
 }

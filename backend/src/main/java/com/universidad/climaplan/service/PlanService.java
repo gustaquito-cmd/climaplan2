@@ -1,7 +1,8 @@
 package com.universidad.climaplan.service;
 
-import com.universidad.climaplan.dto.PlanRequest;
+import com.universidad.climaplan.dto.PlanCreateRequest;
 import com.universidad.climaplan.dto.PlanResponse;
+import com.universidad.climaplan.dto.PlanUpdateRequest;
 import com.universidad.climaplan.entity.EstadoPlan;
 import com.universidad.climaplan.entity.Plan;
 import com.universidad.climaplan.entity.Usuario;
@@ -11,6 +12,7 @@ import com.universidad.climaplan.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -40,15 +42,15 @@ public class PlanService {
         return convertirAResponse(buscarPlan(id, email, administrador));
     }
 
-    public PlanResponse crear(PlanRequest request, String email) {
+    public PlanResponse crear(PlanCreateRequest request, String email) {
         Plan plan = new Plan();
         aplicarRequest(plan, request);
         plan.setUsuario(buscarUsuario(email));
-        plan.setEstado(request.estado() == null ? EstadoPlan.PENDIENTE : request.estado());
+        plan.setEstado(EstadoPlan.PENDIENTE);
         return convertirAResponse(planRepository.save(plan));
     }
 
-    public PlanResponse actualizar(Long id, PlanRequest request, String email, boolean administrador) {
+    public PlanResponse actualizar(Long id, PlanUpdateRequest request, String email, boolean administrador) {
         Plan plan = buscarPlan(id, email, administrador);
         aplicarRequest(plan, request);
         if (request.estado() != null) {
@@ -78,12 +80,29 @@ public class PlanService {
                 ));
     }
 
-    private void aplicarRequest(Plan plan, PlanRequest request) {
-        plan.setTitulo(request.titulo());
-        plan.setCiudad(request.ciudad());
-        plan.setFecha(request.fecha());
-        plan.setTipoActividad(request.tipoActividad());
-        plan.setNotas(request.notas());
+    private void aplicarRequest(Plan plan, PlanCreateRequest request) {
+        aplicarCampos(plan, request.titulo(), request.ciudad(), request.fecha(),
+                request.tipoActividad(), request.notas());
+    }
+
+    private void aplicarRequest(Plan plan, PlanUpdateRequest request) {
+        aplicarCampos(plan, request.titulo(), request.ciudad(), request.fecha(),
+                request.tipoActividad(), request.notas());
+    }
+
+    private void aplicarCampos(
+            Plan plan,
+            String titulo,
+            String ciudad,
+            LocalDate fecha,
+            String tipoActividad,
+            String notas
+    ) {
+        plan.setTitulo(titulo);
+        plan.setCiudad(ciudad);
+        plan.setFecha(fecha);
+        plan.setTipoActividad(tipoActividad);
+        plan.setNotas(notas);
     }
 
     private PlanResponse convertirAResponse(Plan plan) {

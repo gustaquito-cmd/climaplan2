@@ -7,8 +7,8 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 
-@Schema(description = "Datos para crear o actualizar un plan")
-public record PlanRequest(
+@Schema(description = "Datos para actualizar un plan")
+public record PlanUpdateRequest(
         @NotBlank(message = "El título es obligatorio")
         @Schema(description = "Título del plan", example = "Senderismo", requiredMode = Schema.RequiredMode.REQUIRED)
         String titulo,

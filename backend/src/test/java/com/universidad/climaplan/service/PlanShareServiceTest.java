@@ -3,6 +3,7 @@ package com.universidad.climaplan.service;
 import com.universidad.climaplan.dto.SharedWeatherResponse;
 import com.universidad.climaplan.dto.weather.EstadoClimatico;
 import com.universidad.climaplan.dto.weather.PlanWeatherCheckResponse;
+import com.universidad.climaplan.dto.weather.WeatherDataType;
 import com.universidad.climaplan.dto.weather.WeatherResponse;
 import com.universidad.climaplan.entity.EstadoPlan;
 import com.universidad.climaplan.entity.Plan;
@@ -155,9 +156,11 @@ class PlanShareServiceTest {
                         "Caminata",
                         "Tuxtla Gutiérrez",
                         plan.getFecha(),
+                        WeatherDataType.FORECAST,
                         EstadoClimatico.FAVORABLE,
                         weather,
-                        "Condiciones favorables"
+                        "Condiciones pronosticadas favorables",
+                        "Pronóstico para " + plan.getFecha()
                 ));
 
         var response = planShareService.obtenerPlanCompartido("secure-token");
@@ -165,11 +168,12 @@ class PlanShareServiceTest {
         assertEquals("Caminata", response.titulo());
         assertEquals("Tuxtla Gutiérrez", response.ciudad());
         assertEquals("Senderismo", response.tipoActividad());
+        assertEquals(WeatherDataType.FORECAST, response.weatherDataType());
         assertEquals(EstadoClimatico.FAVORABLE, response.estadoClimatico());
         assertEquals(new SharedWeatherResponse(25, 25, 50, "cielo claro", 3), response.clima());
-        assertEquals("Condiciones favorables", response.recomendacion());
+        assertEquals("Condiciones pronosticadas favorables", response.recomendacion());
         assertNull(response.avisoClimatico());
-        assertEquals(9, response.getClass().getRecordComponents().length);
+        assertEquals(10, response.getClass().getRecordComponents().length);
         verify(planWeatherService).verificarPlanCompartido(plan);
     }
 
@@ -186,11 +190,41 @@ class PlanShareServiceTest {
         var response = planShareService.obtenerPlanCompartido("secure-token");
 
         assertEquals("Caminata", response.titulo());
+        assertEquals(WeatherDataType.SERVICE_ERROR, response.weatherDataType());
         assertNull(response.clima());
         assertEquals(
                 "La evaluación climática no está disponible en este momento.",
                 response.avisoClimatico()
         );
+    }
+
+    @Test
+    void planCompartidoConPronosticoNoDisponibleNoMuestraClimaActual() {
+        when(planShareRepository.findByTokenAndActiveTrue("secure-token"))
+                .thenReturn(Optional.of(activeShare("secure-token")));
+        when(planWeatherService.verificarPlanCompartido(plan))
+                .thenReturn(new PlanWeatherCheckResponse(
+                        91L,
+                        "Caminata",
+                        "Tuxtla Gutiérrez",
+                        plan.getFecha(),
+                        WeatherDataType.NOT_AVAILABLE,
+                        null,
+                        null,
+                        null,
+                        "El pronóstico todavía no está disponible para esta fecha."
+                ));
+
+        var response = planShareService.obtenerPlanCompartido("secure-token");
+
+        assertEquals(WeatherDataType.NOT_AVAILABLE, response.weatherDataType());
+        assertNull(response.clima());
+        assertNull(response.estadoClimatico());
+        assertEquals(
+                "El pronóstico todavía no está disponible para esta fecha.",
+                response.avisoClimatico()
+        );
+        verify(planWeatherService).verificarPlanCompartido(plan);
     }
 
     @Test

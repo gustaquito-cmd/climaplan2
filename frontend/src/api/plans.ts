@@ -1,6 +1,7 @@
 import api from './client'
 import type {
   Plan,
+  PlanCreateInput,
   PlanInput,
   PlanShareStatus,
   PlanWeatherCheck,
@@ -19,7 +20,7 @@ export const plansApi = {
     return response.data
   },
 
-  async create(input: PlanInput): Promise<Plan> {
+  async create(input: PlanCreateInput): Promise<Plan> {
     const response = await api.post<Plan>('/api/v1/plans', input)
     return response.data
   },

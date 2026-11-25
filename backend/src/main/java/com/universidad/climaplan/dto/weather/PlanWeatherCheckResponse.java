@@ -13,11 +13,16 @@ public record PlanWeatherCheckResponse(
         String ciudad,
         @Schema(description = "Fecha", example = "2026-12-01")
         LocalDate fecha,
+        @Schema(description = "Tipo de datos meteorológicos disponibles",
+                allowableValues = {"CURRENT", "FORECAST", "NOT_AVAILABLE", "PAST_DATE", "SERVICE_ERROR"})
+        WeatherDataType weatherDataType,
         @Schema(description = "Estado climático", allowableValues = {"FAVORABLE", "PRECAUCION", "NO_RECOMENDABLE"})
         EstadoClimatico estadoClimatico,
-        @Schema(description = "Datos meteorológicos")
+        @Schema(description = "Datos meteorológicos; vacío cuando el tipo indica que no hay pronóstico")
         WeatherResponse clima,
         @Schema(description = "Recomendación", example = "Las condiciones son favorables")
-        String recomendacion
+        String recomendacion,
+        @Schema(description = "Mensaje explicativo para el tipo de datos meteorológicos")
+        String mensaje
 ) {
 }

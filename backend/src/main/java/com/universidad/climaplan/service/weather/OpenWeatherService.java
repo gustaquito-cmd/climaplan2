@@ -1,6 +1,7 @@
 package com.universidad.climaplan.service.weather;
 
 import com.universidad.climaplan.dto.weather.GeoLocationResponse;
+import com.universidad.climaplan.dto.weather.OpenWeatherForecastResponse;
 import com.universidad.climaplan.dto.weather.OpenWeatherResponse;
 import com.universidad.climaplan.dto.weather.WeatherResponse;
 import com.universidad.climaplan.exception.OpenWeatherException;
@@ -15,8 +16,16 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.DateTimeException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class OpenWeatherService {
@@ -47,7 +56,7 @@ public class OpenWeatherService {
         return consultarClimaDetallado(ciudad).respuesta();
     }
 
-    public ClimaActual consultarClimaDetallado(String ciudad) {
+    public CondicionesMeteorologicas consultarClimaDetallado(String ciudad) {
         validarConfiguracion();
         if (ciudad == null || ciudad.isBlank()) {
             throw new OpenWeatherException(HttpStatus.BAD_REQUEST, "El parámetro city es obligatorio");
@@ -68,7 +77,64 @@ public class OpenWeatherService {
                 clima.wind().speed()
         );
         OpenWeatherResponse.WeatherCondition condicion = clima.weather().getFirst();
-        return new ClimaActual(respuesta, condicion.id(), condicion.main());
+        return new CondicionesMeteorologicas(respuesta, condicion.id(), condicion.main());
+    }
+
+    public Optional<CondicionesMeteorologicas> consultarPronostico(String ciudad, LocalDate fecha) {
+        validarConfiguracion();
+        if (ciudad == null || ciudad.isBlank()) {
+            throw new OpenWeatherException(HttpStatus.BAD_REQUEST, "El parámetro city es obligatorio");
+        }
+
+        GeoLocationResponse ubicacion = obtenerUbicacion(ciudad.trim());
+        OpenWeatherForecastResponse forecast = obtenerPronostico(ubicacion);
+        if (forecast.city() == null || forecast.city().timezone() == null || forecast.list() == null) {
+            throw new OpenWeatherException(
+                    HttpStatus.BAD_GATEWAY,
+                    "El servicio meteorológico devolvió un pronóstico incompleto"
+            );
+        }
+
+        ZoneOffset zonaHoraria;
+        try {
+            zonaHoraria = ZoneOffset.ofTotalSeconds(forecast.city().timezone());
+        } catch (DateTimeException exception) {
+            throw new OpenWeatherException(
+                    HttpStatus.BAD_GATEWAY,
+                    "El servicio meteorológico devolvió una zona horaria inválida",
+                    exception
+            );
+        }
+        OpenWeatherForecastResponse.ForecastItem seleccionado = forecast.list().stream()
+                .filter(item -> item != null)
+                .filter(item -> fechaHoraLocal(item, zonaHoraria).toLocalDate().equals(fecha))
+                .min((primero, segundo) -> Long.compare(
+                        segundosHastaMediodia(primero, zonaHoraria),
+                        segundosHastaMediodia(segundo, zonaHoraria)
+                ))
+                .orElse(null);
+        if (seleccionado == null) {
+            return Optional.empty();
+        }
+        validarEntradaPronostico(seleccionado);
+
+        OpenWeatherResponse.WeatherCondition condicion = seleccionado.weather().getFirst();
+        WeatherResponse respuesta = new WeatherResponse(
+                ubicacion.name(),
+                ubicacion.country(),
+                ubicacion.lat(),
+                ubicacion.lon(),
+                seleccionado.main().temp(),
+                seleccionado.main().feelsLike(),
+                seleccionado.main().humidity(),
+                condicion.description(),
+                seleccionado.wind().speed()
+        );
+        return Optional.of(new CondicionesMeteorologicas(
+                respuesta,
+                condicion.id(),
+                condicion.main()
+        ));
     }
 
     private GeoLocationResponse obtenerUbicacion(String ciudad) {
@@ -135,6 +201,68 @@ public class OpenWeatherService {
                     HttpStatus.BAD_GATEWAY,
                     "No fue posible consultar el servicio meteorológico",
                     exception
+            );
+        }
+    }
+
+    private OpenWeatherForecastResponse obtenerPronostico(GeoLocationResponse ubicacion) {
+        try {
+            OpenWeatherForecastResponse respuesta = restClient.get()
+                    .uri(UriComponentsBuilder.fromUriString(weatherBaseUrl)
+                            .path("/forecast")
+                            .queryParam("lat", ubicacion.lat())
+                            .queryParam("lon", ubicacion.lon())
+                            .queryParam("appid", "{apiKey}")
+                            .queryParam("units", "metric")
+                            .queryParam("lang", "es")
+                            .encode()
+                            .buildAndExpand(Map.of("apiKey", apiKey))
+                            .toUri())
+                    .retrieve()
+                    .body(OpenWeatherForecastResponse.class);
+            if (respuesta == null) {
+                throw new OpenWeatherException(
+                        HttpStatus.BAD_GATEWAY,
+                        "El servicio meteorológico devolvió una respuesta vacía"
+                );
+            }
+            return respuesta;
+        } catch (OpenWeatherException exception) {
+            throw exception;
+        } catch (RestClientResponseException exception) {
+            throw convertirErrorProveedor(exception);
+        } catch (RestClientException exception) {
+            throw new OpenWeatherException(
+                    HttpStatus.BAD_GATEWAY,
+                    "No fue posible consultar el pronóstico meteorológico",
+                    exception
+            );
+        }
+    }
+
+    private LocalDateTime fechaHoraLocal(
+            OpenWeatherForecastResponse.ForecastItem item,
+            ZoneOffset zonaHoraria
+    ) {
+        return LocalDateTime.ofInstant(Instant.ofEpochSecond(item.dt()), zonaHoraria);
+    }
+
+    private long segundosHastaMediodia(
+            OpenWeatherForecastResponse.ForecastItem item,
+            ZoneOffset zonaHoraria
+    ) {
+        return Math.abs(Duration.between(
+                LocalTime.NOON,
+                fechaHoraLocal(item, zonaHoraria).toLocalTime()
+        ).toSeconds());
+    }
+
+    private void validarEntradaPronostico(OpenWeatherForecastResponse.ForecastItem item) {
+        if (item.main() == null || item.wind() == null
+                || item.weather() == null || item.weather().isEmpty()) {
+            throw new OpenWeatherException(
+                    HttpStatus.BAD_GATEWAY,
+                    "El servicio meteorológico devolvió datos incompletos"
             );
         }
     }

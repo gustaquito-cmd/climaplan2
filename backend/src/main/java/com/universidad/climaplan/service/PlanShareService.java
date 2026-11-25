@@ -4,6 +4,7 @@ import com.universidad.climaplan.dto.PlanShareResponse;
 import com.universidad.climaplan.dto.SharedPlanResponse;
 import com.universidad.climaplan.dto.SharedWeatherResponse;
 import com.universidad.climaplan.dto.weather.PlanWeatherCheckResponse;
+import com.universidad.climaplan.dto.weather.WeatherDataType;
 import com.universidad.climaplan.entity.Plan;
 import com.universidad.climaplan.entity.PlanShare;
 import com.universidad.climaplan.entity.Usuario;
@@ -97,6 +98,7 @@ public class PlanShareService {
                     plan.getFecha(),
                     plan.getTipoActividad(),
                     plan.getEstado(),
+                    WeatherDataType.SERVICE_ERROR,
                     null,
                     null,
                     null,
@@ -110,8 +112,9 @@ public class PlanShareService {
                 plan.getFecha(),
                 plan.getTipoActividad(),
                 plan.getEstado(),
+                weather.weatherDataType(),
                 weather.estadoClimatico(),
-                new SharedWeatherResponse(
+                weather.clima() == null ? null : new SharedWeatherResponse(
                         weather.clima().temperatura(),
                         weather.clima().sensacionTermica(),
                         weather.clima().humedad(),
@@ -119,7 +122,7 @@ public class PlanShareService {
                         weather.clima().velocidadViento()
                 ),
                 weather.recomendacion(),
-                null
+                weather.clima() == null ? weather.mensaje() : null
         );
     }
 

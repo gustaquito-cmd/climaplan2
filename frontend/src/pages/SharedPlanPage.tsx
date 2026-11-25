@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { getApiErrorMessage } from '../api/errors'
 import { plansApi } from '../api/plans'
 import { ErrorMessage, LoadingState } from '../components/Feedback'
+import { WeatherResult } from '../components/WeatherResult'
 import type { SharedPlan } from '../types'
 
 function statusLabel(status: SharedPlan['estado']) {
@@ -91,36 +92,16 @@ export function SharedPlanPage() {
               <div><dt>Actividad</dt><dd>{plan.tipoActividad}</dd></div>
             </dl>
             <section className="shared-plan-weather" aria-label="Evaluación climática">
-              {plan.clima && plan.estadoClimatico ? (
-                <>
-                  <div className="weather-check-top">
-                    <div>
-                      <p className="eyebrow">CLIMA ACTUAL</p>
-                      <h2 id="shared-weather-heading">{plan.ciudad}</h2>
-                    </div>
-                    <span className={`weather-status weather-${plan.estadoClimatico.toLowerCase()}`}>
-                      {plan.estadoClimatico.replaceAll('_', ' ').toLowerCase()}
-                    </span>
-                  </div>
-                  <p className="weather-description">{plan.clima.descripcion}</p>
-                  <div className="weather-metrics">
-                    <div><span>Temperatura</span><strong>{plan.clima.temperatura}°C</strong></div>
-                    <div><span>Sensación térmica</span><strong>{plan.clima.sensacionTermica}°C</strong></div>
-                    <div><span>Humedad</span><strong>{plan.clima.humedad}%</strong></div>
-                    <div><span>Viento</span><strong>{plan.clima.velocidadViento} m/s</strong></div>
-                  </div>
-                  {plan.recomendacion && (
-                    <div className="recommendation">
-                      <strong>Recomendación</strong>
-                      <p>{plan.recomendacion}</p>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="feedback feedback-info" role="status">
-                  <p>{plan.avisoClimatico ?? 'La evaluación climática no está disponible en este momento.'}</p>
-                </div>
-              )}
+              <WeatherResult
+                weatherDataType={plan.weatherDataType}
+                fecha={plan.fecha}
+                ciudad={plan.ciudad}
+                estadoClimatico={plan.estadoClimatico}
+                clima={plan.clima}
+                recomendacion={plan.recomendacion}
+                mensaje={plan.avisoClimatico}
+                publicView
+              />
             </section>
           </article>
         ) : null}

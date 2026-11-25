@@ -3,10 +3,14 @@ package com.universidad.climaplan.service.weather;
 import com.universidad.climaplan.dto.PlanResponse;
 import com.universidad.climaplan.dto.weather.EstadoClimatico;
 import com.universidad.climaplan.dto.weather.PlanWeatherCheckResponse;
+import com.universidad.climaplan.dto.weather.WeatherDataType;
 import com.universidad.climaplan.dto.weather.WeatherResponse;
 import com.universidad.climaplan.entity.Plan;
 import com.universidad.climaplan.service.PlanService;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.Optional;
 
 @Service
 public class PlanWeatherService {
@@ -39,22 +43,32 @@ public class PlanWeatherService {
     }
 
     private PlanWeatherCheckResponse evaluarPlan(PlanResponse plan) {
-        ClimaActual climaActual = openWeatherService.consultarClimaDetallado(plan.ciudad());
-        WeatherResponse clima = climaActual.respuesta();
-        EstadoClimatico estado = evaluar(climaActual);
+        LocalDate hoy = LocalDate.now();
+        if (plan.fecha().isBefore(hoy)) {
+            return respuestaSinClima(plan, WeatherDataType.PAST_DATE,
+                    "La fecha de este plan ya pasó.");
+        }
+        if (plan.fecha().isEqual(hoy)) {
+            return respuestaConClima(
+                    plan,
+                    WeatherDataType.CURRENT,
+                    openWeatherService.consultarClimaDetallado(plan.ciudad())
+            );
+        }
 
-        return new PlanWeatherCheckResponse(
-                plan.id(),
-                plan.titulo(),
-                plan.ciudad(),
-                plan.fecha(),
-                estado,
-                clima,
-                recomendacion(estado)
-        );
+        Optional<CondicionesMeteorologicas> pronostico =
+                openWeatherService.consultarPronostico(plan.ciudad(), plan.fecha());
+        return pronostico
+                .map(clima -> respuestaConClima(plan, WeatherDataType.FORECAST, clima))
+                .orElseGet(() -> respuestaSinClima(
+                        plan,
+                        WeatherDataType.NOT_AVAILABLE,
+                        "El pronóstico todavía no está disponible para esta fecha. "
+                                + "Intenta nuevamente cuando falten 5 días o menos."
+                ));
     }
 
-    EstadoClimatico evaluar(ClimaActual clima) {
+    EstadoClimatico evaluar(CondicionesMeteorologicas clima) {
         WeatherResponse weather = clima.respuesta();
 
         boolean lluviaFuerte = clima.codigoCondicion() >= 502 && clima.codigoCondicion() <= 504
@@ -79,11 +93,57 @@ public class PlanWeatherService {
         return EstadoClimatico.FAVORABLE;
     }
 
-    private String recomendacion(EstadoClimatico estado) {
+    private PlanWeatherCheckResponse respuestaConClima(
+            PlanResponse plan,
+            WeatherDataType tipo,
+            CondicionesMeteorologicas condiciones
+    ) {
+        EstadoClimatico estado = evaluar(condiciones);
+        return new PlanWeatherCheckResponse(
+                plan.id(),
+                plan.titulo(),
+                plan.ciudad(),
+                plan.fecha(),
+                tipo,
+                estado,
+                condiciones.respuesta(),
+                recomendacion(estado, tipo),
+                tipo == WeatherDataType.CURRENT
+                        ? "Clima actual"
+                        : "Pronóstico para " + plan.fecha()
+        );
+    }
+
+    private PlanWeatherCheckResponse respuestaSinClima(
+            PlanResponse plan,
+            WeatherDataType tipo,
+            String mensaje
+    ) {
+        return new PlanWeatherCheckResponse(
+                plan.id(),
+                plan.titulo(),
+                plan.ciudad(),
+                plan.fecha(),
+                tipo,
+                null,
+                null,
+                null,
+                mensaje
+        );
+    }
+
+    private String recomendacion(EstadoClimatico estado, WeatherDataType tipo) {
+        boolean esPronostico = tipo == WeatherDataType.FORECAST;
         return switch (estado) {
-            case FAVORABLE -> "Las condiciones actuales son favorables para la actividad.";
-            case PRECAUCION -> "La actividad es posible, pero considera las condiciones del clima.";
-            case NO_RECOMENDABLE -> "Se recomienda reprogramar la actividad por las condiciones actuales.";
+            case FAVORABLE -> esPronostico
+                    ? "Las condiciones pronosticadas son favorables para la actividad."
+                    : "Las condiciones actuales son favorables para la actividad.";
+            case PRECAUCION -> esPronostico
+                    ? "La actividad es posible, pero considera las condiciones pronosticadas."
+                    : "La actividad es posible, pero considera las condiciones del clima.";
+            case NO_RECOMENDABLE -> esPronostico
+                    ? "Se recomienda reprogramar la actividad por las condiciones pronosticadas."
+                    : "Se recomienda reprogramar la actividad por las condiciones actuales.";
         };
     }
 }

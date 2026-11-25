@@ -1,5 +1,11 @@
 export type Role = 'ROLE_USER' | 'ROLE_ADMIN'
 export type PlanStatus = 'PENDIENTE' | 'COMPLETADO' | 'CANCELADO'
+export type WeatherDataType =
+  | 'CURRENT'
+  | 'FORECAST'
+  | 'NOT_AVAILABLE'
+  | 'PAST_DATE'
+  | 'SERVICE_ERROR'
 
 export interface Usuario {
   id: number
@@ -34,6 +40,8 @@ export interface PlanInput {
   estado: PlanStatus
 }
 
+export type PlanCreateInput = Omit<PlanInput, 'estado'>
+
 export interface Plan extends PlanInput {
   id: number
   usuarioId: number
@@ -53,6 +61,7 @@ export interface SharedPlan {
   fecha: string
   tipoActividad: string
   estado: PlanStatus
+  weatherDataType: WeatherDataType
   estadoClimatico: 'FAVORABLE' | 'PRECAUCION' | 'NO_RECOMENDABLE' | null
   clima: SharedWeather | null
   recomendacion: string | null
@@ -96,7 +105,9 @@ export interface PlanWeatherCheck {
   titulo: string
   ciudad: string
   fecha: string
-  estadoClimatico: 'FAVORABLE' | 'PRECAUCION' | 'NO_RECOMENDABLE'
-  clima: Weather
-  recomendacion: string
+  weatherDataType: WeatherDataType
+  estadoClimatico: 'FAVORABLE' | 'PRECAUCION' | 'NO_RECOMENDABLE' | null
+  clima: Weather | null
+  recomendacion: string | null
+  mensaje: string
 }
