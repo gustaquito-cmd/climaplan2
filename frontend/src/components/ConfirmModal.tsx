@@ -5,6 +5,7 @@ export function ConfirmModal({
   title,
   message,
   confirmLabel = 'Eliminar',
+  loadingLabel = 'Eliminando...',
   loading = false,
   onConfirm,
   onClose,
@@ -13,6 +14,7 @@ export function ConfirmModal({
   title: string
   message: string
   confirmLabel?: string
+  loadingLabel?: string
   loading?: boolean
   onConfirm: () => void
   onClose: () => void
@@ -29,7 +31,7 @@ export function ConfirmModal({
             Cancelar
           </button>
           <button className="button button-danger" type="button" onClick={onConfirm} disabled={loading}>
-            {loading ? 'Eliminando...' : confirmLabel}
+            {loading ? loadingLabel : confirmLabel}
           </button>
         </>
       }

@@ -19,6 +19,12 @@ Desde la raíz del monorepo:
 
 El backend local escucha en `http://localhost:8080`. La documentación OpenAPI está disponible en `/v3/api-docs`.
 
+### Compartir planes
+
+Los enlaces públicos usan un token generado a partir de 32 bytes de `SecureRandom`, codificados en Base64 URL-safe. Se persiste el token aleatorio en texto claro (con restricción única) para que el propietario autenticado pueda volver a consultar y copiar el enlace desde la interfaz; por tanto, el token debe tratarse como una credencial portadora. El enlace solo permite lectura del DTO público y se invalida al revocarlo o reemplazarlo.
+
+La entidad `PlanShare` añade la tabla `plan_shares`. `spring.jpa.hibernate.ddl-auto=update` crea/actualiza esta tabla al iniciar el backend; no se requiere una migración manual para este cambio.
+
 ## Frontend
 
 ```powershell

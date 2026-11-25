@@ -4,6 +4,7 @@ import com.universidad.climaplan.dto.PlanResponse;
 import com.universidad.climaplan.dto.weather.EstadoClimatico;
 import com.universidad.climaplan.dto.weather.PlanWeatherCheckResponse;
 import com.universidad.climaplan.dto.weather.WeatherResponse;
+import com.universidad.climaplan.entity.Plan;
 import com.universidad.climaplan.service.PlanService;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,24 @@ public class PlanWeatherService {
 
     public PlanWeatherCheckResponse verificarPlan(Long planId, String email, boolean administrador) {
         PlanResponse plan = planService.obtenerPorId(planId, email, administrador);
+        return evaluarPlan(plan);
+    }
+
+    public PlanWeatherCheckResponse verificarPlanCompartido(Plan plan) {
+        return evaluarPlan(new PlanResponse(
+                plan.getId(),
+                plan.getTitulo(),
+                plan.getCiudad(),
+                plan.getFecha(),
+                plan.getTipoActividad(),
+                null,
+                plan.getEstado(),
+                null,
+                null
+        ));
+    }
+
+    private PlanWeatherCheckResponse evaluarPlan(PlanResponse plan) {
         ClimaActual climaActual = openWeatherService.consultarClimaDetallado(plan.ciudad());
         WeatherResponse clima = climaActual.respuesta();
         EstadoClimatico estado = evaluar(climaActual);

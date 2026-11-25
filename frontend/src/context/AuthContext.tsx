@@ -68,7 +68,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null)
       setLoading(false)
       setProfileError(null)
-      if (location.pathname !== '/login' && location.pathname !== '/register') {
+      if (
+        location.pathname !== '/login' &&
+        location.pathname !== '/register' &&
+        !location.pathname.startsWith('/shared/')
+      ) {
         navigate('/login', {
           replace: true,
           state: { message: 'Tu sesión expiró. Inicia sesión de nuevo.' },

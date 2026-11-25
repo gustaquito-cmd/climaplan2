@@ -40,6 +40,33 @@ export interface Plan extends PlanInput {
   nombreUsuario: string
 }
 
+export interface PlanShareStatus {
+  token: string | null
+  active: boolean
+  createdAt: string | null
+  expiresAt: string | null
+}
+
+export interface SharedPlan {
+  titulo: string
+  ciudad: string
+  fecha: string
+  tipoActividad: string
+  estado: PlanStatus
+  estadoClimatico: 'FAVORABLE' | 'PRECAUCION' | 'NO_RECOMENDABLE' | null
+  clima: SharedWeather | null
+  recomendacion: string | null
+  avisoClimatico: string | null
+}
+
+export interface SharedWeather {
+  temperatura: number
+  sensacionTermica: number
+  humedad: number
+  descripcion: string
+  velocidadViento: number
+}
+
 export interface FavoriteInput {
   ciudad: string
   pais: string

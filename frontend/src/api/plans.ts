@@ -1,5 +1,12 @@
 import api from './client'
-import type { Plan, PlanInput, PlanWeatherCheck } from '../types'
+import type {
+  Plan,
+  PlanInput,
+  PlanShareStatus,
+  PlanWeatherCheck,
+  SharedPlan,
+} from '../types'
+import { publicApi } from './client'
 
 export const plansApi = {
   async list(): Promise<Plan[]> {
@@ -29,6 +36,31 @@ export const plansApi = {
   async weatherCheck(id: number): Promise<PlanWeatherCheck> {
     const response = await api.get<PlanWeatherCheck>(
       `/api/v1/plans/${id}/weather-check`,
+    )
+    return response.data
+  },
+
+  async createShare(id: number): Promise<PlanShareStatus> {
+    const response = await api.post<PlanShareStatus>(
+      `/api/v1/plans/${id}/share`,
+    )
+    return response.data
+  },
+
+  async getShare(id: number): Promise<PlanShareStatus> {
+    const response = await api.get<PlanShareStatus>(
+      `/api/v1/plans/${id}/share`,
+    )
+    return response.data
+  },
+
+  async revokeShare(id: number): Promise<void> {
+    await api.delete(`/api/v1/plans/${id}/share`)
+  },
+
+  async getSharedPlan(token: string): Promise<SharedPlan> {
+    const response = await publicApi.get<SharedPlan>(
+      `/api/v1/shared/plans/${encodeURIComponent(token)}`,
     )
     return response.data
   },

@@ -1,10 +1,14 @@
 import axios from 'axios'
 import { clearAccessToken, getAccessToken } from './session'
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+const createApiClient = () => axios.create({
+  baseURL,
   headers: { 'Content-Type': 'application/json' },
 })
+
+const api = createApiClient()
+export const publicApi = createApiClient()
 
 api.interceptors.request.use((config) => {
   const token = getAccessToken()

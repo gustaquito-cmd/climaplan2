@@ -7,7 +7,12 @@ import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { PageHeader } from '../components/PageHeader'
 import { useToast } from '../context/ToastContext'
-import type { Plan, PlanInput, PlanWeatherCheck } from '../types'
+import type {
+  Plan,
+  PlanInput,
+  PlanShareStatus,
+  PlanWeatherCheck,
+} from '../types'
 
 const emptyPlan = (): PlanInput => ({
   titulo: '',
@@ -43,6 +48,13 @@ export function PlansPage() {
   const [deletePlan, setDeletePlan] = useState<Plan | null>(null)
   const [weatherCheck, setWeatherCheck] = useState<PlanWeatherCheck | null>(null)
   const [weatherError, setWeatherError] = useState('')
+  const [shareDialogPlan, setShareDialogPlan] = useState<Plan | null>(null)
+  const [shareDetails, setShareDetails] = useState<PlanShareStatus | null>(null)
+  const [shareLoading, setShareLoading] = useState(false)
+  const [shareSaving, setShareSaving] = useState(false)
+  const [shareRevoking, setShareRevoking] = useState(false)
+  const [shareError, setShareError] = useState('')
+  const [confirmShareRevocation, setConfirmShareRevocation] = useState(false)
 
   const loadPlans = useCallback(async () => {
     setLoading(true)
@@ -153,6 +165,73 @@ export function PlansPage() {
     }
   }
 
+  async function openShare(plan: Plan) {
+    setShareDialogPlan(plan)
+    setShareDetails(null)
+    setShareError('')
+    setShareLoading(true)
+    try {
+      setShareDetails(await plansApi.getShare(plan.id))
+    } catch (requestError) {
+      setShareError(getApiErrorMessage(requestError))
+    } finally {
+      setShareLoading(false)
+    }
+  }
+
+  function closeShareDialog() {
+    if (shareSaving || shareRevoking) return
+    setShareDialogPlan(null)
+    setShareDetails(null)
+    setShareError('')
+  }
+
+  async function generateShare() {
+    if (!shareDialogPlan) return
+    setShareSaving(true)
+    setShareError('')
+    try {
+      setShareDetails(await plansApi.createShare(shareDialogPlan.id))
+      showToast('Enlace público generado.')
+    } catch (requestError) {
+      setShareError(getApiErrorMessage(requestError))
+    } finally {
+      setShareSaving(false)
+    }
+  }
+
+  async function copyShareLink() {
+    if (!shareDetails?.token) return
+    const shareUrl = `${window.location.origin}/shared/${shareDetails.token}`
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard API no disponible')
+      }
+      await navigator.clipboard.writeText(shareUrl)
+      showToast('Enlace copiado')
+      setShareError('')
+    } catch {
+      setShareError('No se pudo copiar el enlace. Puedes seleccionarlo y copiarlo manualmente.')
+    }
+  }
+
+  async function revokeShare() {
+    if (!shareDialogPlan) return
+    setShareRevoking(true)
+    setShareError('')
+    try {
+      await plansApi.revokeShare(shareDialogPlan.id)
+      setShareDetails({ token: null, active: false, createdAt: null, expiresAt: null })
+      setConfirmShareRevocation(false)
+      showToast('Enlace revocado.')
+    } catch (requestError) {
+      setShareError(getApiErrorMessage(requestError))
+      setConfirmShareRevocation(false)
+    } finally {
+      setShareRevoking(false)
+    }
+  }
+
   const [weatherModalOpen, setWeatherModalOpen] = useState(false)
 
   return (
@@ -218,6 +297,9 @@ export function PlansPage() {
                     disabled={loadingWeatherId === plan.id}
                   >
                     <Icon name="cloud" size={15} /> Clima
+                  </button>
+                  <button className="text-button" onClick={() => void openShare(plan)} type="button">
+                    <Icon name="share" size={15} /> Compartir
                   </button>
                   <button className="text-button danger-text" onClick={() => setDeletePlan(plan)} type="button">
                     <Icon name="trash" size={15} /> Eliminar
@@ -338,6 +420,63 @@ export function PlansPage() {
         ) : null}
       </Modal>
 
+      <Modal
+        open={shareDialogPlan !== null}
+        title="Compartir plan"
+        onClose={closeShareDialog}
+        closeOnOverlay={!shareSaving && !shareRevoking}
+      >
+        {shareLoading ? (
+          <LoadingState label="Consultando enlace..." />
+        ) : (
+          <>
+            <p className="confirm-message">
+              {shareDialogPlan
+                ? `Cualquier persona con el enlace podrá consultar “${shareDialogPlan.titulo}” en modo de solo lectura.`
+                : ''}
+            </p>
+            {shareError && <ErrorMessage message={shareError} />}
+            {shareDetails?.active && shareDetails.token ? (
+              <div className="share-link-content">
+                <label className="share-link-field">
+                  Enlace público
+                  <input
+                    aria-label="Enlace público"
+                    readOnly
+                    value={`${window.location.origin}/shared/${shareDetails.token}`}
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                </label>
+                <div className="share-link-actions">
+                  <button className="button button-primary" type="button" onClick={() => void copyShareLink()}>
+                    Copiar enlace
+                  </button>
+                  <button
+                    className="button button-secondary"
+                    type="button"
+                    onClick={() => setConfirmShareRevocation(true)}
+                    disabled={shareRevoking}
+                  >
+                    Revocar enlace
+                  </button>
+                </div>
+              </div>
+            ) : shareDetails && (
+              <div className="share-link-actions share-create-action">
+                <button
+                  className="button button-primary"
+                  type="button"
+                  onClick={() => void generateShare()}
+                  disabled={shareSaving}
+                >
+                  {shareSaving ? 'Generando...' : 'Generar enlace'}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </Modal>
+
       <ConfirmModal
         open={deletePlan !== null}
         title="Eliminar plan"
@@ -345,6 +484,19 @@ export function PlansPage() {
         loading={removing}
         onConfirm={() => void confirmRemove()}
         onClose={() => setDeletePlan(null)}
+      />
+
+      <ConfirmModal
+        open={confirmShareRevocation}
+        title="Revocar enlace"
+        message="Las personas que tengan este enlace dejarán de poder consultar el plan."
+        confirmLabel="Revocar enlace"
+        loadingLabel="Revocando..."
+        loading={shareRevoking}
+        onConfirm={() => void revokeShare()}
+        onClose={() => {
+          if (!shareRevoking) setConfirmShareRevocation(false)
+        }}
       />
     </section>
   )
